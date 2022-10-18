@@ -6,6 +6,7 @@ import numpy as np
 import xarray as xr
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
+testcase = 'test1'
 
 # read data
 data = xr.open_mfdataset(f'{esapath}*.nc')
@@ -21,24 +22,18 @@ data = data.to_array().load()
 # create mask of missing values
 mask = np.isnan(data)
 
+# get variable names
+varnames = data.coords["variable"].values
+
 # set ocean to nan
 data = data.where(landmask, np.nan)
 mask = mask.where(landmask, np.nan)
 
 # crossval settings
-frac_mis = 0.1
+frac_mis = 0.03 # DEBUG 0.1
 ncubes = 20
-
-#def delete_minicubes(mask, frac_mis, ncubes):
-#
-#    varnames = mask.coords["variable"].values
-#
-#    for varname in varnames:
-#        tmp = delete_minicubes_one_variable(mask.sel(variable=varname).drop('variable'),
-#                                            frac_mis, ncubes)
-#        mask.loc[dict(variable=varname)] = tmp
-#
-#    return mask
+verification_year = '2004'
+crossvalidation_year = '2005'
 
 def delete_minicubes(mask, frac_mis, ncubes):
     #### args 
@@ -69,7 +64,7 @@ def delete_minicubes(mask, frac_mis, ncubes):
     cubes_on_land = np.unique(minicubes)
     cubes_on_land = cubes_on_land[~np.isnan(cubes_on_land)]
 
-    # delete randomly 10% of the minicubes
+    # delete randomly X% of the minicubes
     mask_verification = mask.copy(deep=True)
     exitflag = False
     while True:
@@ -77,21 +72,27 @@ def delete_minicubes(mask, frac_mis, ncubes):
         mask_verification = mask_verification.where(minicubes != selected_cube, True)
         n_cv = mask_verification.sum().load().item()
         frac_cv = n_cv / n_obs
-        print(f'fraction crossval data from observed data: {frac_cv}')
-        if frac_cv > 1+frac_mis: # cannot break outer loop
+        #print(f'fraction crossval data from observed data: {frac_cv}')
+        if frac_cv > frac_mis: # cannot break outer loop
             break
 
     return mask_verification
 
-verification_year = '2004'
-crossvalidation_year = '2005'
+# save original cube for crossvalidation and verification
+data.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/data_orig.nc')
+mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/mask_orig.nc')
 
-varnames = mask.coords["variable"].values
-
+# delete values for verification
 for varname in varnames:
-    tmp = delete_minicubes(mask.sel(time=verification_year, variable=varname).drop('variable'),
+    print(varname)
+    tmp = delete_minicubes(mask.sel(time=verification_year, variable=varname).drop('variable').load(),
                            frac_mis, ncubes)
     mask.loc[dict(variable=varname, time=verification_year)] = tmp
 
-data.to_netcdf # save orig
+# TODO continue here: data_crossval is ALL NAN
+import IPython; IPython.embed()
 data = data.where(mask)
+
+# save crossval cube for gap-filling
+data.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/data_crossval.nc')
+mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/mask_crossval.nc')
