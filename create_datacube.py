@@ -36,7 +36,7 @@ from MH email:
 # permafrost extent: not yet downloaded
 # above-ground biomass: not yet downloaded
 # topography: not yet downloaded
-# surface net radiation from ESA CCI cloud: validation by DWD awaiting
+# surface net radiation from ESA CCI cloud: validation by DWD awaiting, not yet downloaded
 
 import numpy as np
 import xarray as xr
@@ -57,6 +57,7 @@ ism = False
 itws = False
 iprecip = False
 iobs = True
+inetrad = False
 
 # fire
 if ifire:
@@ -232,3 +233,6 @@ if iobs:
 
     data = data.to_dataset(name='precipitation_obs')
     data.to_netcdf(f'{esapath}precipitation_obs.nc')
+
+if inetrad:
+    pass
