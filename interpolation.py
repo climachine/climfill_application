@@ -2,21 +2,27 @@
 interpolate initial gapfill
 """
 
+import numpy as np
 import xarray as xr
 from climfill.interpolation import gapfill_thin_plate_spline, gapfill_kriging
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
+testcase = 'test1'
 
 # read data
-data = xr.open_mfdataset(f'{esapath}*.nc')
+data = xr.open_dataset(f'{esapath}{testcase}/data_crossval.nc')
 
 # extract landmask
 landmask = data.landmask
 data = data.drop('landmask') 
 
+# xarray/dask issue https://github.com/pydata/xarray/issues/3813
+# value assignment only works if non-dask array
+data = data.to_array().load()
+
 # divide into monthly climatology and anomalies
 data_monthly = data.groupby('time.month').mean()
-data_anom = data.groupby('time.month') - data_monthly
+data_anom = data.groupby('time.month') - data_monthly # maybe more precise: time.yearmonth?
 
 # gapfill monthly data with thin-plate-spline interpolation
 rbf_kwargs = {'burned_area':              {'neighbors': 100, 
@@ -43,9 +49,7 @@ rbf_kwargs = {'burned_area':              {'neighbors': 100,
               'terrestrial_water_storage':{'neighbors': 100, 
                                            'smoothing': 0.1, 
                                            'degree': 1}}
-# xarray/dask issue https://github.com/pydata/xarray/issues/3813
-# value assignment only works if non-dask array
-#data_monthly = gapfill_thin_plate_spline(data_monthly.to_array().load(), landmask, rbf_kwargs)
+data_monthly = gapfill_thin_plate_spline(data_monthly, landmask, rbf_kwargs)
 
 # gapfill anomalies with kriging
 kriging_kwargs = {'burned_area':              {'constant_value': 100, 
@@ -82,7 +86,7 @@ kriging_kwargs = {'burned_area':              {'constant_value': 100,
                                                'repeats': 5}}
 import warnings # DEBUG
 warnings.simplefilter('ignore')
-data_anom = gapfill_kriging(data_anom.to_array().load(), landmask, kriging_kwargs)
+data_anom = gapfill_kriging(data_anom, landmask, kriging_kwargs)
 
 # step 1.4: add monthly climatology and anomalies back together
 data = data_anom.groupby('time.month') + data_monthly
@@ -95,8 +99,9 @@ if np.isnan(data).sum() != 0: # if still missing values present
     data = data.fillna(variable_mean)
 
 # test if all missing values are caught and infilled
+import IPython; IPython.embed()
 assert np.isnan(data).sum().item() == 0
 
 # save
 data = data.to_dataset('variable')
-data.to_netcdf(f'{esapath}data_interpolated.nc')
+data.to_netcdf(f'{esapath}interpolated/data_interpolated.nc')
