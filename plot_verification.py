@@ -24,28 +24,14 @@ def js_one_point(lndpt1, lndpt2, bins):
     hist2, _ = np.histogramdd(lndpt2, bins=bins)
     return js(hist1.flatten(),hist2.flatten())
 
-def calc_js(dat1, dat2):
-    # TODO note that no of items over which js is computed is low (12 months).
-    # and of those only crossval values are used
-    # maybe compute not for each landpt but over all avail points?
-    #nbins = 50 
-    #bins = [np.linspace(207,320,num=nbins),
-    #        np.linspace(0,0.77, num=nbins),
-    #        np.linspace(0,0.40, num=nbins),
-    #        np.linspace(-23,209,num=nbins)]
-    bins = 3
-    res = xr.full_like(dat1[0,0,:,:].squeeze().drop(['variable','time']), np.nan)
-    for x in range(dat1.shape[2]):
-        for y in range(dat1.shape[3]):
-            if not dat1[:,:,x,y].all().item():
-                res[x,y] = js_one_point(dat1[:,:,x,y],dat2[:,:,x,y], bins=bins)
-
 # NOTE:
 # TWS does not have any originally missing values in 2004
 # soil moisture does not have any CV values, prob because hard to catch them
 #      maybe make sure it is 10% missing per variable and not overall? # DONE in test2
 # naturally gap-free variables have gaps. # change! # update: no since time
 #      elongation is also a gap!
+# JS not possible bec needs times where all 8 vars are observed (i.e. in the
+#      verification set) at the same time. ditched for now
 
 # read data
 orig = xr.open_dataset(f'{esapath}{testcase}/data_orig.nc')
