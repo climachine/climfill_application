@@ -2,13 +2,20 @@
 NAMESTRING
 """
 
+from datetime import datetime
 import numpy as np
 import xarray as xr
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--testcase', '-t', dest='testcase', type=str)
+args = parser.parse_args()
+testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
-testcase = 'test1'
 
 # read data
+print(f'{datetime.now()} read data...')
 data = xr.open_mfdataset(f'{esapath}*.nc')
 
 # extract landmask
@@ -20,17 +27,19 @@ data = data.drop('landmask')
 data = data.to_array().load()
 
 # create mask of missing values
+print(f'{datetime.now()} create mask...')
 mask = np.isnan(data)
 
 # get variable names
 varnames = data.coords["variable"].values
 
 # set ocean to nan
+print(f'{datetime.now()} set ocean to nan...')
 data = data.where(landmask, np.nan)
 mask = mask.where(landmask, np.nan)
 
 # crossval settings
-frac_mis = 0.03 # DEBUG 0.1
+frac_mis = 0.1 
 ncubes = 20
 verification_year = '2004'
 crossvalidation_year = '2005'
@@ -79,20 +88,31 @@ def delete_minicubes(mask, frac_mis, ncubes):
     return mask_verification
 
 # save original cube for crossvalidation and verification
+print(f'{datetime.now()} save orig data...')
 data.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/data_orig.nc')
 mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/mask_orig.nc')
 
 # delete values for verification
 for varname in varnames:
-    print(varname)
+    print(f'{datetime.now()} verification {varname}...')
     tmp = delete_minicubes(mask.sel(time=verification_year, variable=varname).drop('variable').load(),
                            frac_mis, ncubes)
     mask.loc[dict(variable=varname, time=verification_year)] = tmp
 
-# TODO continue here: data_crossval is ALL NAN
-import IPython; IPython.embed()
-data = data.where(mask)
+data = data.where(np.logical_not(mask))
+
+# delete values for cross-validation
+for varname in varnames:
+    print(f'{datetime.now()} cross-validation {varname}...')
+    tmp = delete_minicubes(mask.sel(time=crossvalidation_year, variable=varname).drop('variable').load(),
+                           frac_mis, ncubes)
+    mask.loc[dict(variable=varname, time=crossvalidation_year)] = tmp
+
+data = data.where(np.logical_not(mask))
+# TODO check: SWE neither no or all missing values for whole 2004+2005
 
 # save crossval cube for gap-filling
+quit() #DEBUG
+print(f'{datetime.now()} save...')
 data.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/data_crossval.nc')
 mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/mask_crossval.nc')
