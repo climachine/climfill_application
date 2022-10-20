@@ -30,8 +30,8 @@ from MH email:
 # soil moisture: DONE
 # terrestrial water storage: DONE
 # precipitation: DONE
-# temperature from obs: DONE
-# precipitation from obs: DONE
+# temperature from obs: DONE, use n_obs for further deleting?
+# precipitation from obs: DONE, use n_obs for further deleting?
 # lat, lon: to be calc from regridded
 # permafrost extent: not yet downloaded
 # above-ground biomass: not yet downloaded
@@ -52,11 +52,11 @@ ds_out = xr.Dataset({'lat': (['lat'], np.arange(-89.75,90, 0.5)), # same as cdo_
 ifire = False
 ilstpre = False
 ilstpost = False
-isnow = False
+isnow = True
 ism = False
 itws = False
 iprecip = False
-iobs = True
+iobs = False
 inetrad = False
 
 # fire
@@ -139,6 +139,10 @@ if isnow:
 
     data = data.resample(time='MS').mean()
     data = data.sel(time=timeslice)
+
+    # set ALL (!) missing values (bec all in summer from missing files, checked)
+    # to 0 because they imply NO snow
+    data = data.fillna(0)
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
