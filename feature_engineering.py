@@ -2,7 +2,10 @@
 feature engineering
 """
 
+from datetime import datetime
+import numpy as np
 import xarray as xr
+import argparse
 from climfill.feature_engineering import (
     create_embedded_feature,
     create_lat_lon_features,
@@ -10,29 +13,37 @@ from climfill.feature_engineering import (
     stack_constant_maps,
 )
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--testcase', '-t', dest='testcase', type=str)
+args = parser.parse_args()
+testcase = args.testcase
+
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
 # read data
-# TODO continue running and testing here
-data = xr.open_dataset(f'{esapath}interpolated/data_interpolated.nc').to_array().load()
+print(f'{datetime.now()} read data...')
+data = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').to_array().load()
+mask = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc').to_array().load()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
-import IPython; IPython.embed()
 
 # constant maps include:
 # landcover, aboveground biomass
 # TODO include rest
-landcover = xr.open_dataset(f'{esapath}landcover_yearly/landcover_2003.nc')
+# TODO landcover is wrong res (180,360)
+#landcover = xr.open_dataset(f'{esapath}landcover_yearly/landcover_2003.nc')
+#constant_maps = landcover.lccs_class.rename('landcover')
+constant_maps = xr.full_like(data.isel(variable=0), np.nan).rename('latdata').drop('variable') #DEBUG
 
 # step 2.1:  add longitude and latitude as predictors
-latitude_arr, longitude_arr = create_lat_lon_features(constant_maps)
+print(f'{datetime.now()} add lat lon...')
+latitude_arr, longitude_arr = create_lat_lon_features(data) #TODO this does not need to be a separate fct
+constant_maps = constant_maps.to_dataset()
 constant_maps['latdata'] = latitude_arr
 constant_maps['londata'] = longitude_arr
 constant_maps = constant_maps.to_array()
 
-# step 2.2: create mask of missing values
-mask = np.isnan(data)
-
-# step 2.3 (optional): remove ocean points for reducing file size
+# step 2.2 (optional): remove ocean points for reducing file size
+print(f'{datetime.now()} remove ocean points...')
 landlat, landlon = np.where(landmask)
 data = data.isel(lon=xr.DataArray(landlon, dims='landpoints'),
                  lat=xr.DataArray(landlat, dims='landpoints'))
@@ -41,13 +52,15 @@ mask = mask.isel(lon=xr.DataArray(landlon, dims='landpoints'),
 constant_maps = constant_maps.isel(lon=xr.DataArray(landlon, dims='landpoints'),
                                    lat=xr.DataArray(landlat, dims='landpoints'))
 
-# step 2.4: add time as predictor
+# step 2.3: add time as predictor
+print(f'{datetime.now()} add time...')
 time_arr = create_time_feature(data)
 data = data.to_dataset(dim='variable')
 data['timedat'] = time_arr
 data = data.to_array()
 
-# step 2.5: add time lags as predictors
+# step 2.4: add time lags as predictors
+print(f'{datetime.now()} add time lags...')
 lag_007b = create_embedded_feature(data, start=-7,   end=0, name='lag_7b')
 lag_030b = create_embedded_feature(data, start=-30,  end=-7, name='lag_30b')
 lag_180b = create_embedded_feature(data, start=-180, end=-30, name='lag_180b')
@@ -59,22 +72,34 @@ data = xr.concat(
         dim='variable', join='left', fill_value=0)
 
 # fill still missing values at beginning of time series
+print(f'{datetime.now()} gapfill start of timeseries...')
 varmeans = data.mean(dim=('time'))
 data = data.fillna(varmeans)
 
-# step 2.6: concatenate constant maps and variables and features
-constant_maps = stack_constant_maps(data, constant_maps)
+# step 2.5: concatenate constant maps and variables and features
+print(f'{datetime.now()} concatenate data and constant maps...')
+constant_maps = stack_constant_maps(data, constant_maps.drop('time')) #TODO w/o drop
 data = xr.concat([data, constant_maps], dim='variable')
 
-# step 2.7: normalise data
-datamean = data.mean(dim=('time', 'landpoints'))
-datastd = data.std(dim=('time', 'landpoints'))
-data = (data - datamean) / datastd
+# assert that no missing values are still NaN
+assert np.isnan(data).sum().item() == 0
 
-# step 2.8: stack into tabular data
+# step 2.6: normalise data
+# tree-based methods do not need standardisation
+# exchange.com/questions/5277/do-you-have-to-normalize-data-when-building-decis
+#ion-trees-using-r
+#datamean = data.mean(dim=('time', 'landpoints'))
+#datastd = data.std(dim=('time', 'landpoints'))
+#data = (data - datamean) / datastd
+
+# step 2.7: stack into tabular data
+print(f'{datetime.now()} stack...')
 data = data.stack(datapoints=('time', 'landpoints')).reset_index('datapoints').T
 mask = mask.stack(datapoints=('time', 'landpoints')).reset_index('datapoints').T
 
 # save
-data.to_netcdf(f'{esapath}datatable.nc')
-mask.to_netcdf(f'{esapath}masktable.nc')
+print(f'{datetime.now()} save...')
+data = data.to_dataset('variable')
+data.to_netcdf(f'{esapath}{testcase}/datatable.nc')
+mask = mask.to_dataset('variable')
+mask.to_netcdf(f'{esapath}{testcase}/masktable.nc')
