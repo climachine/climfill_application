@@ -3,6 +3,8 @@ NAMESTRING
 """
 
 import argparse
+from datetime import datetime
+import numpy as np
 import xarray as xr
 
 parser = argparse.ArgumentParser()
@@ -25,8 +27,8 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 # read data
 print(f'{datetime.now()} read data...')
 data = xr.open_mfdataset(f'{esapath}{testcase}/clusters/datacluster_iter_c*.nc', 
-                         combine='nested', concat_dim='datapoints').load()
-landmask = xr.open_dataset(f'{esapath}landmask.nc')
+                         combine='nested', concat_dim='datapoints').to_array().load()
+landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # unstack
 print(f'{datetime.now()} unstack...')
