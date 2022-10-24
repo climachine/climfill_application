@@ -1,6 +1,7 @@
 #!/bin/bash
-TESTCASE='test1'
+TESTCASE='test2'
 N_CLUSTERS=30
+COUNT=$(expr $N_CLUSTERS - 1)
 
 # delete crossval
 echo "DELETE CROSSVAL"
@@ -11,8 +12,9 @@ echo "INITIAL INTERPOLATION"
 python interpolation.py -t ${TESTCASE}
 
 # interpolation 
+# since scipy uses all cores by default, run with high niceness
 echo "FEATURE ENGINEERING"
-python feature_engineering.py -t ${TESTCASE}
+niceness -n 10 python feature_engineering.py -t ${TESTCASE} 
 
 # clustering 
 echo "CLUSTERING"
@@ -21,14 +23,17 @@ python clustering.py -t ${TESTCASE} -c ${N_CLUSTERS}
 
 # regression learning
 echo "REGRESSION LEARNING"
-for CLUSTER in $(seq 0 ${N_CLUSTERS}); do
-    if [[ ! -f /net/so4/landclim/bverena/large_files/climfill_esa/${TESTCASE}/clusters/datacluster_iter_c${CLUSTER}.nc ]]; then 
-        echo "file ${YEAR} e${EPOCH}f${FOLD} subitted to queue ..."
-        python regression_learning.py -t ${TESTCASE} -c ${CLUSTER}
+for CLUSTER in $(seq 0 ${COUNT}); do
+    CLUSTER_PREFIX=$(printf "%02d" ${CLUSTER})
+    if [[ ! -f /net/so4/landclim/bverena/large_files/climfill_esa/${TESTCASE}/clusters/datacluster_iter_c${CLUSTER_PREFIX}.nc ]]; then 
+        echo "cluster ${CLUSTER} subitted to queue ..."
+        python regression_learning.py -t ${TESTCASE} -c ${CLUSTER_PREFIX}
     else
-        echo "file ${year} e${epoch}f${fold} already exists. skipping ..."
+        echo "cluster ${CLUSTER} already exists. skipping ..."
     fi
     #exit
 done
 
 # postprocessing
+echo "POSTPROCESSING"
+python postprocessing.py -t ${TESTCASE}
