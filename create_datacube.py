@@ -32,7 +32,7 @@ from MH email:
 # precipitation: DONE
 # temperature from obs: DONE, use n_obs for further deleting?
 # precipitation from obs: DONE, use n_obs for further deleting?
-# lat, lon: to be calc from regridded
+# lat, lon: DONE
 # permafrost extent: not yet downloaded
 # above-ground biomass: not yet downloaded
 # topography: not yet downloaded
