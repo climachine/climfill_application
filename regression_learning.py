@@ -11,7 +11,7 @@ from climfill.regression_learning import Imputation
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
-parser.add_argument('--cluster', '-c', dest='testcase', type=str)
+parser.add_argument('--cluster', '-c', dest='cluster', type=int)
 args = parser.parse_args()
 testcase = args.testcase
 c = args.cluster
@@ -27,8 +27,8 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
 # numpy selects all datapoints as missing in imputethis since 0 and 1 
 # are treated as true and no false are found
 print(f'{datetime.now()} read data...')
-data = xr.open_dataset(f'{esapath}{testcase}/clusters/datacluster_init_c{c}.nc')['data']
-mask = xr.open_dataset(f'{esapath}{testcase}/clusters/maskcluster_init_c{c}.nc')['data'].astype(bool)
+data = xr.open_dataset(f'{esapath}{testcase}/clusters/datacluster_init_c{c:02d}.nc')['data']
+mask = xr.open_dataset(f'{esapath}{testcase}/clusters/maskcluster_init_c{c:02d}.nc')['data'].astype(bool)
 
 # gapfilling
 print(f'{datetime.now()} gapfilling...')
@@ -41,7 +41,7 @@ rf_settings = {'n_estimators': 300,  # CV and consult table
                'n_jobs': 30} # depends on your number of cpus 
 regr_dict = {varname: RandomForestRegressor(**rf_settings) for varname in varnames}
 verbose = 1
-maxiter = 2
+maxiter = 20
 
 impute = Imputation(maxiter=maxiter)
 data_gapfilled, test = impute.impute(
@@ -53,4 +53,4 @@ data_gapfilled = data_gapfilled.sel(variable=varnames)
 # save
 print(f'{datetime.now()} save...')
 data_gapfilled = data_gapfilled.to_dataset('variable')
-data_gapfilled.to_netcdf(f'{esapath}{testcase}/clusters/datacluster_iter_c{c}.nc')
+data_gapfilled.to_netcdf(f'{esapath}{testcase}/clusters/datacluster_iter_c{c:02d}.nc')
