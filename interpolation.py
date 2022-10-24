@@ -5,6 +5,7 @@ interpolate initial gapfill
 import numpy as np
 import xarray as xr
 import argparse
+from datetime import datetime
 from climfill.interpolation import gapfill_thin_plate_spline, gapfill_kriging
 
 parser = argparse.ArgumentParser()
