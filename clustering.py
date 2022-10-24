@@ -9,7 +9,7 @@ from sklearn.cluster import MiniBatchKMeans
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
-parser.add_argument('--n_clusters', '-c', dest='testcase', type=str)
+parser.add_argument('--n_clusters', '-c', dest='n_clusters', type=int)
 args = parser.parse_args()
 testcase = args.testcase
 n_clusters = args.n_clusters
@@ -43,5 +43,5 @@ for c in range(n_clusters):
     # numpy selects all datapoints as missing in imputethis since 0 and 1 
     # are treated as true and no false are found
     mask_c = mask_c.to_dataset(name='data')
-    mask_c.to_netcdf(f'{esapath}{testcase}/clusters/maskcluster_init_c{c}.nc', 
+    mask_c.to_netcdf(f'{esapath}{testcase}/clusters/maskcluster_init_c{c:02d}.nc', 
                      encoding={'data':{'dtype':'bool'}}) 
