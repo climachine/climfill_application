@@ -30,8 +30,11 @@ data = data.to_array().load()
 print(f'{datetime.now()} create mask...')
 mask = np.isnan(data)
 
-# get variable names
-varnames = data.coords["variable"].values
+# get variable names of gappy variables
+# ALL values (except t2m obs) are gappy since timeseries elongation is also "gap"
+varnames = ['soil_moisture','surface_temperature',
+            'precipitation','terrestrial_water_storage']
+varnames = data.coords['variable'].values
 
 # set ocean to nan
 print(f'{datetime.now()} set ocean to nan...')
@@ -53,7 +56,7 @@ def delete_minicubes(mask, frac_mis, ncubes):
 
     # calculate number of observed and missing values (on land)
     n_mis = mask.sum().item()
-    n_land = np.isnan(mask).sum().item()
+    n_land = np.logical_not(np.isnan(mask)).sum().item()
     n_obs = n_land - n_mis
 
     # create minicubes of observed data for cross-validation
@@ -79,10 +82,11 @@ def delete_minicubes(mask, frac_mis, ncubes):
     while True:
         selected_cube = np.random.choice(cubes_on_land)
         mask_verification = mask_verification.where(minicubes != selected_cube, True)
-        n_cv = mask_verification.sum().load().item()
+        n_cv = mask_verification.sum().load().item() - n_mis
         frac_cv = n_cv / n_obs
-        #print(f'fraction crossval data from observed data: {frac_cv}')
-        if frac_cv > frac_mis: # cannot break outer loop
+        print(f'fraction crossval data from observed data: {n_cv} {frac_cv}')
+        if frac_cv > frac_mis: 
+            print(f'fraction crossval data from observed data: {frac_cv}')
             break
 
     return mask_verification
@@ -109,10 +113,8 @@ for varname in varnames:
     mask.loc[dict(variable=varname, time=crossvalidation_year)] = tmp
 
 data = data.where(np.logical_not(mask))
-# TODO check: SWE neither no or all missing values for whole 2004+2005
 
 # save crossval cube for gap-filling
-quit() #DEBUG
 print(f'{datetime.now()} save...')
 data.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/data_crossval.nc')
 mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/mask_crossval.nc')
