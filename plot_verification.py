@@ -19,11 +19,6 @@ verification_year = '2004'
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
 
-def js_one_point(lndpt1, lndpt2, bins):
-    hist1, _ = np.histogramdd(lndpt1, bins=bins)
-    hist2, _ = np.histogramdd(lndpt2, bins=bins)
-    return js(hist1.flatten(),hist2.flatten())
-
 # NOTE:
 # TWS does not have any originally missing values in 2004
 # soil moisture does not have any CV values, prob because hard to catch them
@@ -69,7 +64,6 @@ corr_intp = xr.corr(orig, intp, dim=('lat','lon','time'))
 corr_fill = xr.corr(orig, fill, dim=('lat','lon','time'))
 rmse_intp = calc_rmse(orig, intp, dim=('lat','lon','time'))
 rmse_fill = calc_rmse(orig, fill, dim=('lat','lon','time'))
-import IPython; IPython.embed()
 
 # plot
 fig = plt.figure(figsize=(10,10))
