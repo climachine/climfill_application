@@ -52,5 +52,5 @@ regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False)
 data = regridder(data)
 
 # save
-data = data.to_dataset(name='era5land')
+data = data.to_dataset('variable')
 data.to_netcdf(f'{esapath}data_era5land.nc')
