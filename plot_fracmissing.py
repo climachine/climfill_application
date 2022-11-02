@@ -10,6 +10,9 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
+varnames = ['soil_moisture','surface_temperature','precipitation', #for order of plots
+            'terrestrial_water_storage','snow_water_equivalent',
+            'temperature_obs','precipitation_obs','burned_area']
 
 # open data
 #varname ='soil_moisture'
@@ -31,11 +34,15 @@ landmask = ~np.isnan(landmask)
 relevant_mask = ((~np.isnan(oceanmask)) & landmask)
 
 # calculate fraction of missing values per grid point
-maskmap = mask.sum(dim='time') / 624
+maskmap = mask.sum(dim='time') / len(data.time)
 
 # calculate fraction of missing values per month x latitude
 masktimeline = mask.sum(dim='lon') / latmask
 masktimeline = masktimeline.where(~np.isinf(masktimeline), np.nan)
+
+# calculate fraction of missing values overall
+n_relevant = relevant_mask.sum() * len(data.time)
+frac_mis = 1 - (mask.sum() / n_relevant)
 
 # remove uncovered high latitudes
 masktimeline = masktimeline.sel(lat=slice(-62,82))
@@ -104,14 +111,9 @@ masktimeline.precipitation_obs.T.plot(ax=ax15, cmap=cmap, vmin=0, vmax=1,
 masktimeline.burned_area.T.plot(ax=ax16, cmap=cmap, vmin=0, 
                            vmax=1, add_colorbar=False)
 
-ax1.set_title('soil moisture')
-ax2.set_title('surface temperature')
-ax3.set_title('precipitation')
-ax4.set_title('terrestrial water storage')
-ax9.set_title('snow water equivalent')
-ax10.set_title('2m temperature')
-ax11.set_title('precipitation from obs')
-ax12.set_title('burned area')
+for varname, ax in zip(varnames, (ax1,ax2,ax3,ax4,ax9,ax10,ax11,ax12)):
+    frac = int(np.round(frac_mis[varname].item(), 2)*100)
+    ax.set_title(f'{varname}: {frac}% missing')
 
 ax5.set_xlabel('')
 ax6.set_xlabel('')
