@@ -47,7 +47,7 @@ ncubes = 20
 verification_year = '2004'
 crossvalidation_year = '2005'
 
-def delete_minicubes(mask, frac_mis, ncubes):
+def delete_minicubes(mask, frac_mis, ncubes): # TODO from climfill
     #### args 
     # args: mask (3dims called time, lat lon, xarray); 
     #          with observed True, unobserved False, outside (ocean) NaN
