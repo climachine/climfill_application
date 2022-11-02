@@ -36,6 +36,11 @@ fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 mask_orig = xr.open_dataset(f'{esapath}{testcase}/mask_orig.nc')
 mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
 
+# (optional) calculate anomalies
+orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
+fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+
 # select verification year
 mask_orig = mask_orig.sel(time=verification_year).load()
 mask_cv = mask_cv.sel(time=verification_year).load()
@@ -72,13 +77,14 @@ ax2 = fig.add_subplot(212)
 x_pos =np.arange(0,2*len(corr_intp),2)
 wd = 0.3
 
-ax1.bar(x_pos, corr_intp, width=wd)
-ax1.bar(x_pos+wd, corr_fill, width=wd)
+ax1.bar(x_pos, corr_intp, width=wd, label='intp')
+ax1.bar(x_pos+wd, corr_fill, width=wd, label='fill')
 
 ax2.bar(x_pos, rmse_intp, width=wd)
 ax2.bar(x_pos+wd, rmse_fill, width=wd)
 
 ax1.set_xticks([])
+ax1.legend()
 ax2.set_xticks(x_pos+0.5*wd, varnames, rotation=90)
 ax2.set_ylim([0,40]) #TODO debug remove
 ax1.set_xlim([-1,16])
