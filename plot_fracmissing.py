@@ -14,24 +14,21 @@ varnames = ['soil_moisture','surface_temperature','precipitation', #for order of
             'terrestrial_water_storage','snow_water_equivalent',
             'temperature_obs','precipitation_obs','burned_area']
 
+# TODO
+# weird months with high obs in lst?
+# include dtr
+
 # open data
-#varname ='soil_moisture'
-#data = xr.open_mfdataset(f'{esapath}{varname}.nc').load()
-data = xr.open_mfdataset(f'{esapath}*.nc').load()
-data = data.where(data.landmask)
+data = xr.open_dataset(f'{esapath}/data_orig.nc')
+mask = xr.open_dataset(f'{esapath}/mask_orig.nc')
+landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
-# get missingness mask
-mask = ~np.isnan(data)
+# get landmask for plotting (land: w/o deserts and glacier)
+latmask = landmask.sum(dim='lon')
 
-# get landmask for plotting
-oceanmask = data.landmask
-data = data.drop('landmask') #DEBG
-latmask = oceanmask.sum(dim='lon')
-
-# get basic landmask from regionmask
-landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(data.lon,data.lat)
-landmask = ~np.isnan(landmask)
-relevant_mask = ((~np.isnan(oceanmask)) & landmask)
+# get oceanmask from regionmask
+oceanmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(data.lon,data.lat)
+oceanmask = ~np.isnan(oceanmask)
 
 # calculate fraction of missing values per grid point
 maskmap = mask.sum(dim='time') / len(data.time)
@@ -41,17 +38,17 @@ masktimeline = mask.sum(dim='lon') / latmask
 masktimeline = masktimeline.where(~np.isinf(masktimeline), np.nan)
 
 # calculate fraction of missing values overall
-n_relevant = relevant_mask.sum() * len(data.time)
-frac_mis = 1 - (mask.sum() / n_relevant)
+n_relevant = landmask.sum() * len(data.time)
+frac_mis = mask.sum() / n_relevant
 
 # remove uncovered high latitudes
 masktimeline = masktimeline.sel(lat=slice(-62,82))
 
 # set non-relevant land to nan
-maskmap = maskmap.where(relevant_mask, np.nan)
+maskmap = maskmap.where(landmask, np.nan)
 
 # set ocean to negative
-maskmap = maskmap.where(~np.isnan(oceanmask), -10)
+maskmap = maskmap.where(oceanmask, -10)
 
 # plot
 proj = ccrs.Robinson()
@@ -77,7 +74,7 @@ ax14 = fig.add_subplot(4,4,14)
 ax15 = fig.add_subplot(4,4,15)
 ax16 = fig.add_subplot(4,4,16)
 
-maskmap.soil_moisture.plot(ax=ax1, cmap=cmap, vmin=0, vmax=1, 
+im = maskmap.soil_moisture.plot(ax=ax1, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
 maskmap.surface_temperature.plot(ax=ax2, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
@@ -115,6 +112,10 @@ for varname, ax in zip(varnames, (ax1,ax2,ax3,ax4,ax9,ax10,ax11,ax12)):
     frac = int(np.round(frac_mis[varname].item(), 2)*100)
     ax.set_title(f'{varname}: {frac}% missing')
 
+cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7]) # left bottom width height
+cbar = fig.colorbar(im, cax=cbar_ax)
+cbar.set_label('fraction of missing values')
+
 ax5.set_xlabel('')
 ax6.set_xlabel('')
 ax7.set_xlabel('')
@@ -140,4 +141,12 @@ ax5.set_facecolor('lightgrey')
 ax6.set_facecolor('lightgrey')
 ax7.set_facecolor('lightgrey')
 ax8.set_facecolor('lightgrey')
+ax9.set_facecolor('lightgrey')
+ax10.set_facecolor('lightgrey')
+ax11.set_facecolor('lightgrey')
+ax12.set_facecolor('lightgrey')
+ax13.set_facecolor('lightgrey')
+ax14.set_facecolor('lightgrey')
+ax15.set_facecolor('lightgrey')
+ax16.set_facecolor('lightgrey')
 plt.show()
