@@ -20,8 +20,8 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 # crossval settings
 frac_mis = 0.1 
 ncubes = 20
-verification_year = '2004'
-crossvalidation_year = '2005'
+vf_year = '2004'
+cv_year = '2005'
 
 # read data cube
 print(f'{datetime.now()} read data...')
@@ -33,18 +33,18 @@ varnames = data.coords['variable'].values
 # delete values for verification
 for varname in varnames:
     print(f'{datetime.now()} verification {varname}...')
-    tmp = delete_minicubes(mask.sel(time=verification_year, variable=varname).drop('variable').load(),
+    tmp = delete_minicubes(mask.sel(time=vf_year, variable=varname).drop('variable').load(),
                            frac_mis, ncubes)
-    mask.loc[dict(variable=varname, time=verification_year)] = tmp
+    mask.loc[dict(variable=varname, time=vf_year)] = tmp
 
 data = data.where(np.logical_not(mask))
 
 # delete values for cross-validation
 for varname in varnames:
     print(f'{datetime.now()} cross-validation {varname}...')
-    tmp = delete_minicubes(mask.sel(time=crossvalidation_year, variable=varname).drop('variable').load(),
+    tmp = delete_minicubes(mask.sel(time=cv_year, variable=varname).drop('variable').load(),
                            frac_mis, ncubes)
-    mask.loc[dict(variable=varname, time=crossvalidation_year)] = tmp
+    mask.loc[dict(variable=varname, time=cv_year)] = tmp
 
 data = data.where(np.logical_not(mask))
 
