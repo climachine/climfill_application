@@ -51,7 +51,7 @@ constant_value = [0.01, 0.1, 1, 10, 100]
 length_scale = [0.1,1,10,20,30,50,100]
 repeats = [1,2,5,10]
 npoints = [10,100,1000,2000] 
-iarameters = [constant_value, length_scale, repeats, npoints]
+parameters = [constant_value, length_scale, repeats, npoints]
 #parameters = [[10],[1],[1],[10,20]] # DEBUG
 paramnames = ['constant_value','length_scale','repeats','npoints']
 
