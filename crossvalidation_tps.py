@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from climfill.interpolation import gapfill_thin_plate_spline, gapfill_kriging
+from climfill.interpolation import gapfill_thin_plate_spline
 
 def calc_rmse(dat1, dat2, dim=None):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
@@ -39,9 +39,7 @@ orig = orig.sel(time=crossvalidation_year)
 
 # divide into seasonal and anomal
 data_monthly = data.groupby('time.month').mean()
-data_anom = data.groupby('time.month') - data_monthly 
 orig_monthly = orig.groupby('time.month').mean()
-orig_anom = orig.groupby('time.month') - orig_monthly 
 
 # select ranges of crossval parameters RBFInterp
 neighbors = [20,50,100]
@@ -56,23 +54,18 @@ params_combinations = list(itertools.product(*parameters))
 res = []
 
 for params in params_combinations:
-    rbf_kwargs = {varname: dict(zip(paramnames, params)) for varname in varnames}
+    tps_kwargs = {varname: dict(zip(paramnames, params)) for varname in varnames}
 
-    tmp = gapfill_thin_plate_spline(data_monthly.copy(deep=True), landmask, rbf_kwargs) #copy necessary otherwise data_monthly gets gapfilled (ie. is identical to) tmp after 1 loop
+    tmp = gapfill_thin_plate_spline(data_monthly.copy(deep=True), 
+                                    landmask, tps_kwargs) 
+          # deep copy necessary otherwise data_monthly gets gapfilled (ie. 
+          # is identical to) tmp after 1 loop
 
     rmse = calc_rmse(tmp, orig_monthly, dim=('lat','lon','month'))
-    # rmse zero for some variables
-    # is possible for individual param combinations due to 
-    # Singularity Error in thin-plate-spline
-    # tested: not zero rmse if neighbors large enough
-    # but rmse between data_monthly and orig_monthly should be zero, is not
-    # is possible because different monthly means, since more values are 
-    # missing in crossval; original ncs and anomalies have rmse zero checked
-    # also: deep copy necessary as input for gapfill_thin_plate_spline
     res.append([*params, *rmse.values])
 
 df = pd.DataFrame(res)
 df.columns = paramnames + varnames.tolist()
-df = df.replace(0, np.nan) # zero rmse is unrealistic and extremely likely due to Singularity Error TODO implement somehow differently?
+df = df.replace(0, np.nan) # zero rmse is unrealistic and extremely likely due to Singularity Error TODO implement somehow differently? # problem: if only occurs in individual months, overall rmse is underestimated
 print(df.set_index(paramnames).idxmin())
 import IPython; IPython.embed()
