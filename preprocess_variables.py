@@ -35,7 +35,7 @@ from MH email:
 # lat, lon: DONE
 # permafrost extent: not yet downloaded
 # above-ground biomass: not yet downloaded
-# topography: not yet downloaded
+# topography: not yet downloaded (suggestion: NASA SRTM Van Zyl, 2001, Guisan, 1999)
 # surface net radiation from ESA CCI cloud: validation by DWD awaiting, not yet downloaded
 
 import numpy as np
@@ -52,11 +52,16 @@ ds_out = xr.Dataset({'lat': (['lat'], np.arange(-89.75,90, 0.5)), # same as cdo_
 ifire = False
 ilstpre = False
 ilstpost = False
-isnow = True
+ilstpostinit = False
+idtr = False
+idtrinit = False
+isnow = False
 ism = False
+isminit = False
 itws = False
 iprecip = False
 iobs = False
+iobsinit = True
 inetrad = False
 
 # fire
@@ -84,65 +89,135 @@ if ifire:
 #cdo remaplaf,r360x180 /net/exo/landclim/data/dataset/ESA-CCI-LC_Land-Cover-Maps/v2.0.7cds/300m_plate-carree_1y/original/ESACCI-LC-L4-LCCS-Map-300m-P1Y-2003-v2.0.7cds.nc test.nc # remaplaf is for land cover classes; fulden says consider aggregating the classes for more useful results
 
 # land surface temperature
-# missing values: cloud cover, in whole month? TODO investigate
-#if ilst:
-#    filepath = landclimstoragepath + \
-#               'ESA-CCI-LST_MULTISENSOR-IRCDR/v2.00/0.01deg_lat-lon_1m/original/'
-#    import IPython; IPython.embed()
-#    data = xr.open_mfdataset(f'{lstpath}*DAY*.nc')['lst']
-#data = data.sel(time=timeslice)
-#regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
-#data = regridder(data) #TypeError: buffer is too small for requested array
-# with cdo
-# create weights
-# cdo genbil,cdo_grid_description.txt /net/exo/landclim/data/dataset/ESA-CCI-LST_MULTISENSOR-IRCDR/v2.00/0.01deg_lat-lon_1m/original/ESACCI-LST-L3S-LST-IRCDR_-0.01deg_1MONTHLY_DAY-20200901000000-fv2.00.nc cdo_weights.nc
-# loop over files
-# cdo remap,r720x360,cdo_weights.nc /net/exo/landclim/data/dataset/ESA-CCI-LST_MULTISENSOR-IRCDR/v2.00/0.01deg_lat-lon_1m/original/ESACCI-LST-L3S-LST-IRCDR_-0.01deg_1MONTHLY_DAY-20200901000000-fv2.00.nc /net/so4/landclim/bverena/large_files/climfill_esa/lsttest.nc
+# missing values: cloud cover, swaths
 if ilstpre:
     import glob
     import os
     filepath = landclimstoragepath + \
-               'ESA-CCI-LST_MULTISENSOR-IRCDR/v2.00/0.01deg_lat-lon_1m/original/'
-    filenames = glob.glob(f'{filepath}*DAY*.nc')
-    if not os.path.exists('cdo_weights.nc'):
+               'ESA-CCI-LST_MULTISENSOR-IRCDR/v2.00/0.01deg_lat-lon_1d/original/'
+    filenames = glob.glob(f'{filepath}*.nc')
+    if not os.path.exists('cdo_weights.nc'): 
         os.system(f'cdo genbil,cdo_grid_description.txt {filenames[0]} cdo_weights.nc')
 
     # regrid all files individually
+    # Remap weights not used because missing values are different for each timestep
+    # https://code.mpimet.mpg.de/projects/cdo/wiki/FAQ (search "remap weights")
+    # although error "weights not used" is faster with weights
     for filename in filenames:
-        if not os.path.exists(f'{esapath}lst_monthly/lst_{filename.split("-")[-2][:8]}.nc'):
-            print(f'{esapath}lst_monthly/lst_{filename.split("-")[-2][:8]}.nc')
-            os.system(f'cdo -P 10 remap,r720x360,cdo_weights.nc {filename} {esapath}lst_monthly/lst_{filename.split("-")[-2][:8]}.nc')
+        savename = f'{esapath}lst_daily/lst_{filename.split("-")[-2][:8]}_{filename.split("-")[-3].split("_")[-1]}.nc'
+        if not os.path.exists(f'{savename}'):
+            cmd = f'cdo -P 20 remap,r720x360,cdo_weights.nc -selname,lst {filename} {savename} \n'
+            with open('run_lst_regrid_cdo.sh','a') as file:
+                file.write(cmd)
 
 # TODO from daily
 # note that 1995-08-01 is manually removed after ilstpre because cdo regrids wrongly
 if ilstpost:
     # second part: read in files, coordinate transformation, save as one file 
-    data = xr.open_mfdataset(f'{esapath}lst_monthly/lst_*.nc')['lst']
+    #data = xr.open_mfdataset(f'{esapath}lst_monthly/lst_*.nc')['lst'] # OLD
+    data = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst']
 
     # convert coords
     data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
     data = data.sortby('lon')
+
+    # convert kelvin to celcius
+    data = data - 273.15
+
+    # create mask for less than 15 days of data
+    mask = np.isnan(data).astype(float).resample(time='MS').sum() # how many nans
+    mask = mask <= 15 # where less than 15 nans
+    data = data.resample(time='MS').mean()
+    data = data.where(mask) # keep where less than 15 nans
 
     data = data.sel(time=timeslice)
 
     data = data.to_dataset(name='surface_temperature')
     data.to_netcdf(f'{esapath}surface_temperature.nc')
 
+if ilstpostinit:
+    # second part: read in files, coordinate transformation, save as one file 
+    #data = xr.open_mfdataset(f'{esapath}lst_monthly/lst_*.nc')['lst'] # OLD
+    data = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst']
+
+    # convert coords
+    data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
+    data = data.sortby('lon')
+
+    # convert kelvin to celcius
+    data = data - 273.15
+
+    #  take all vars for init guess
+    data = data.resample(time='MS').mean()
+
+    data = data.sel(time=timeslice)
+
+    data = data.to_dataset(name='surface_temperature')
+    data.to_netcdf(f'{esapath}surface_temperature_init.nc')
+
+if idtr:
+    day = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst'] #DEBUG
+    night = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*NIGHT.nc')['lst'] # DEBUG
+
+    # calculate DTR
+    data = np.abs(day - night)
+
+    # convert coords
+    data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
+    data = data.sortby('lon')
+
+    # create mask for less than 15 days of data
+    mask = np.isnan(data).astype(float).resample(time='MS').sum()
+    mask = mask <= 15
+    data = data.resample(time='MS').mean()
+    data = data.where(mask)
+
+    data = data.sel(time=timeslice)
+
+    data = data.to_dataset(name='diurnal_temperature_range')
+    data.to_netcdf(f'{esapath}diurnal_temperature_range.nc')
+
+if idtrinit:
+    day = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst'] #DEBUG
+    night = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*NIGHT.nc')['lst'] # DEBUG
+
+    # calculate DTR
+    data = np.abs(day - night)
+
+    # convert coords
+    data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
+    data = data.sortby('lon')
+
+    # monthly agg
+    data = data.resample(time='MS').mean()
+
+    data = data.sel(time=timeslice)
+
+    data = data.to_dataset(name='diurnal_temperature_range')
+    data.to_netcdf(f'{esapath}diurnal_temperature_range_init.nc')
+
 # snow water equivalent
 if isnow:
     snowpath = landclimstoragepath + 'ESA-CCI-Snow_SWE/v2.0/0.1deg_lat-lon_1d/original/'
     data = xr.open_mfdataset(f'{snowpath}*.nc')['swe']
+     
+    # all negative values are masks (ocean, mountain, glacier) set to nan
+    mask = data >= 0 # keep those values
 
-    assert np.isnan(data).sum().values.item() == 0 # no missing values
-
-    data = data.where(data >= 0, 0) # all masks (ocean, mountain, glacier) to zero snow
-
+    # resample to month: checked that all months have 21 valid days everywhere (bec only constant missingness)
     data = data.resample(time='MS').mean()
+    mask = mask.resample(time='MS').mean()
     data = data.sel(time=timeslice)
 
-    # set ALL (!) missing values (bec all in summer from missing files, checked)
+    # set missing values (bec all in summer from missing files, checked)
     # to 0 because they imply NO snow
     data = data.fillna(0)
+
+    # insert missing values from mountains and glaciers again
+    data = data.where(mask)
+
+    # set SH values to 0, not NAN, because we assume no snow in SH
+    data = data.where(data.lat > 0, 0)
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
@@ -152,8 +227,6 @@ if isnow:
 
 # soil moisture:
 # missing values: below dense vegetation, swaths(?)
-# TODO wait for MH to reply which values are taken into monthly vals
-# or if my own monthly agg is necessary
 if ism:
     filepath = landclimstoragepath + \
     'ESA-CCI-SM_combined/v07.1/0.25deg_lat-lon_1d/processed/netcdf/'
@@ -161,18 +234,34 @@ if ism:
 
     data = data.sel(time=timeslice)
 
-    # create mask for less than 21 days of data
+    # create mask for less than 15 days of data
     mask = np.isnan(data).astype(float).resample(time='MS').sum()
-    mask = mask > 21
+    mask = mask <= 15
     data = data.resample(time='MS').mean()
     data = data.where(mask)
-    import IPython; IPython.embed()
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
 
     data = data.to_dataset(name='soil_moisture')
     data.to_netcdf(f'{esapath}soil_moisture.nc')
+
+# intial guess insted interp is any measured value this month, mean
+if isminit:
+    filepath = landclimstoragepath + \
+    'ESA-CCI-SM_combined/v07.1/0.25deg_lat-lon_1d/processed/netcdf/'
+    data = xr.open_mfdataset(f'{filepath}*.nc')['sm']
+
+    data = data.sel(time=timeslice)
+
+    # mean of all available variables
+    data = data.resample(time='MS').mean()
+
+    regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
+    data = regridder(data)
+
+    data = data.to_dataset(name='soil_moisture')
+    data.to_netcdf(f'{esapath}soil_moisture_init.nc')
 
 # terrestrial water storage
 # missing values: monthly slices missing
@@ -202,6 +291,9 @@ if iprecip:
 
     data = data.sel(time=timeslice)
 
+    # convert from [mm/hour] to [mm/month]
+    data = data*24*30.5
+
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
 
@@ -210,8 +302,45 @@ if iprecip:
 
 # from obs
 # missing values: ocean
-# TODO: set some values to nan because define threshold below obs
 if iobs:
+    # temperature
+    filepath = landclimstoragepath + \
+    'CRUTS/v4.06/0.5deg_lat-lon_1m/original/'
+    data = xr.open_mfdataset(f'{filepath}*tmp*.nc')['tmp']
+    mask = xr.open_mfdataset(f'{filepath}*tmp*.nc')['stn']
+
+    # mask areas with 0 station influence
+    data = data.where(mask != 0, np.nan)
+
+    data = data.sel(time=timeslice)
+    data = data.resample(time='MS').mean() # M-mid to MS
+
+    regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
+    data = regridder(data)
+
+    data = data.to_dataset(name='temperature_obs')
+    data.to_netcdf(f'{esapath}temperature_obs.nc')
+
+    # precip
+    filepath = landclimstoragepath + \
+    'CRUTS/v4.02/0.5deg_lat-lon_1m/original/'
+    data = xr.open_mfdataset(f'{filepath}*pre*.nc')['pre']
+    mask = xr.open_mfdataset(f'{filepath}*pre*.nc')['stn']
+
+    # mask areas with 0 station influence
+    data = data.where(mask != 0, np.nan)
+
+    data = data.sel(time=timeslice)
+    data = data.resample(time='MS').mean() # M-mid to MS
+
+    regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
+    data = regridder(data)
+
+    data = data.to_dataset(name='precipitation_obs')
+    data.to_netcdf(f'{esapath}precipitation_obs.nc')
+
+if iobsinit:
+    # temperature
     filepath = landclimstoragepath + \
     'CRUTS/v4.06/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*tmp*.nc')['tmp']
@@ -223,8 +352,9 @@ if iobs:
     data = regridder(data)
 
     data = data.to_dataset(name='temperature_obs')
-    data.to_netcdf(f'{esapath}temperature_obs.nc')
+    data.to_netcdf(f'{esapath}temperature_obs_init.nc')
 
+    # precip
     filepath = landclimstoragepath + \
     'CRUTS/v4.02/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*pre*.nc')['pre']
@@ -236,7 +366,7 @@ if iobs:
     data = regridder(data)
 
     data = data.to_dataset(name='precipitation_obs')
-    data.to_netcdf(f'{esapath}precipitation_obs.nc')
+    data.to_netcdf(f'{esapath}precipitation_obs_init.nc')
 
 if inetrad:
     pass
