@@ -13,6 +13,10 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation', #for order of plots
             'terrestrial_water_storage','snow_water_equivalent',
             'temperature_obs','precipitation_obs','burned_area']
+#varnames = ['soil_moisture','surface_temperature','temperature_obs',
+#            'diurnal_temperature_range','burned_area',
+#            'precipitation','precipitation_obs','snow_cover_fraction',
+#            'terrestrial_water_storage', 'land_cover']
 
 # TODO
 # weird months with high obs in lst?
