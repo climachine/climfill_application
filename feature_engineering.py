@@ -8,7 +8,6 @@ import xarray as xr
 import argparse
 from climfill.feature_engineering import (
     create_embedded_feature,
-    create_lat_lon_features,
     create_time_feature,
     stack_constant_maps,
 )
@@ -23,7 +22,7 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 # read data
 print(f'{datetime.now()} read data...')
 data = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').to_array().load()
-mask = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc').to_array().load()
+mask = xr.open_dataset(f'{esapath}mask_orig.nc').to_array().load()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # constant maps include:
@@ -36,10 +35,10 @@ constant_maps = xr.full_like(data.isel(variable=0), np.nan).rename('latdata').dr
 
 # step 2.1:  add longitude and latitude as predictors
 print(f'{datetime.now()} add lat lon...')
-latitude_arr, longitude_arr = create_lat_lon_features(data) #TODO this does not need to be a separate fct
 constant_maps = constant_maps.to_dataset()
-constant_maps['latdata'] = latitude_arr
-constant_maps['londata'] = longitude_arr
+londata, latdata = np.meshgrid(constant_maps.lon, constant_maps.lat)
+constant_maps['latdata'] = (("lat", "lon"), latdata)
+constant_maps['londata'] = (("lat", "lon"), londata)
 constant_maps = constant_maps.to_array()
 
 # step 2.2 (optional): remove ocean points for reducing file size
