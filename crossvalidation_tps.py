@@ -54,6 +54,7 @@ params_combinations = list(itertools.product(*parameters))
 res = []
 
 for params in params_combinations:
+    print(f'{datetime.now()} parameter combination {params} ...')
     tps_kwargs = {varname: dict(zip(paramnames, params)) for varname in varnames}
 
     tmp = gapfill_thin_plate_spline(data_monthly.copy(deep=True), 
