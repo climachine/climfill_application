@@ -25,9 +25,15 @@ cv_year = '2005'
 
 # read data cube
 print(f'{datetime.now()} read data...')
-data = xr.open_dataset(f'{esapath}/data_orig.nc').to_array()
-mask = xr.open_dataset(f'{esapath}/mask_orig.nc').to_array()
-#varnames =  list(data.keys()) # unsorted!
+data = xr.open_dataset(f'{esapath}{testcase}/data_initguess.nc').to_array()
+landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
+
+# mask needs to be computed separately
+mask = np.isnan(data)
+mask = mask.where(landmask, np.nan) # is needed for calc of n_obs
+
+# get varnames
+#varnames =  list(data.keys()) # unsorted, but works on dataset
 varnames = data.coords['variable'].values
 
 # delete values for verification
