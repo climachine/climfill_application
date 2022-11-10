@@ -2,9 +2,6 @@
 NAMESTRING
 """
 
-# TODO logical problem: CV over clusters, but clusters may not only include
-# CV year. solve
-
 import argparse
 import itertools
 
@@ -60,10 +57,10 @@ params_combinations = list(itertools.product(*parameters))
 res = []
 
 for params in params_combinations:
+    print(f'{datetime.now()} parameter combination {params} ...')
     gp_kwargs = {varname: dict(zip(paramnames, params)) for varname in varnames}
 
-    tmp = gapfill_kriging(data_anom.copy(deep=True), 
-                          landmask, gp_kwargs) 
+    tmp = gapfill_kriging(data_anom.copy(deep=True), landmask, gp_kwargs) 
           # deep copy necessary otherwise data_monthly gets gapfilled (ie. 
           # is identical to) tmp after 1 loop
 
