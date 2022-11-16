@@ -1,25 +1,25 @@
 #!/bin/bash
-TESTCASE='test2'
+TESTCASE='test3'
 N_CLUSTERS=30
 COUNT=$(expr $N_CLUSTERS - 1)
 
-# delete crossval
-echo "DELETE CROSSVAL"
-python delete_crossval.py -t ${TESTCASE}
-
-# interpolation 
-echo "INITIAL INTERPOLATION"
-python interpolation.py -t ${TESTCASE}
-
-# interpolation 
-# since scipy uses all cores by default, run with high niceness
-echo "FEATURE ENGINEERING"
-niceness -n 10 python feature_engineering.py -t ${TESTCASE} 
-
-# clustering 
-echo "CLUSTERING"
-mkdir /net/so4/landclim/bverena/large_files/climfill_esa/${TESTCASE}/clusters/
-python clustering.py -t ${TESTCASE} -c ${N_CLUSTERS}
+# delete crossval TODO update things missing
+#echo "DELETE CROSSVAL"
+#python delete_crossval.py -t ${TESTCASE}
+#
+## interpolation 
+#echo "INITIAL INTERPOLATION"
+#python interpolation.py -t ${TESTCASE}
+#
+## interpolation 
+## since scipy uses all cores by default, run with high niceness
+#echo "FEATURE ENGINEERING"
+#niceness -n 10 python feature_engineering.py -t ${TESTCASE} 
+#
+## clustering 
+#echo "CLUSTERING"
+#mkdir /net/so4/landclim/bverena/large_files/climfill_esa/${TESTCASE}/clusters/
+#python clustering.py -t ${TESTCASE} -c ${N_CLUSTERS}
 
 # regression learning
 echo "REGRESSION LEARNING"
