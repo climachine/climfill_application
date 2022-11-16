@@ -29,11 +29,11 @@ def calc_rmse(dat1, dat2, dim):
 #      verification set) at the same time. ditched for now
 
 # read data
-orig = xr.open_dataset(f'{esapath}{testcase}/data_orig.nc')
+orig = xr.open_dataset(f'{esapath}data_orig_swe.nc')
 intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 
-mask_orig = xr.open_dataset(f'{esapath}{testcase}/mask_orig.nc')
+mask_orig = xr.open_dataset(f'{esapath}mask_orig_swe.nc')
 mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
 
 # (optional) calculate anomalies
@@ -65,6 +65,7 @@ intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
 
 # calc metrics
+import IPython; IPython.embed()
 corr_intp = xr.corr(orig, intp, dim=('lat','lon','time'))
 corr_fill = xr.corr(orig, fill, dim=('lat','lon','time'))
 rmse_intp = calc_rmse(orig, intp, dim=('lat','lon','time'))
