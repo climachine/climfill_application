@@ -11,8 +11,8 @@ import xarray as xr
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','burned_area','temperature_obs',
-            'precipitation_obs','snow_water_equivalent',
-            'diurnal_temperature_range']
+            'precipitation_obs','snow_cover_fraction',
+            'diurnal_temperature_range','landcover']
 
 # read data
 print(f'{datetime.now()} read data...')
