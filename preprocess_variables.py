@@ -58,12 +58,14 @@ ilstpostinit = False
 idtr = False
 idtrinit = False
 isnowpre = False
-isnowpost = True
+isnowpreinit = False
+isnowpost = False
+isnowpostinit = False
 ism = False
 isminit = False
 itws = False
 iprecip = False
-iobs = False
+iobs = True
 iobsinit = False
 inetrad = False
 
@@ -102,11 +104,21 @@ if ilandcover:
                'ESA-CCI-LC_Land-Cover-Maps/v2.0.7cds/300m_plate-carree_1y/processed/regrid0.5deg/'
     data = xr.open_mfdataset(f'{filepath}*.nc')['lccs_class']
 
-    # regridding not necesssary, already done by MH
-
     data = data.sel(time=timeslice)
 
     data = data.resample(time='MS').ffill()
+
+    # add missing years at the end by copying 2015 forward
+    # needs to happen after resample otherwise year 2020 monthly is lost
+    data = data.reindex(time=xr.date_range(start='1995-01-01', end='2021-01-01', freq='MS'), method='ffill')
+
+    # remove 2021-01-01 again
+    data = data.sel(time=timeslice)
+
+    # regridding not necesssary, already done by MH
+    # update: regridding necessary since not same grid description was used
+    regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
+    data = regridder(data)
 
     data = data.to_dataset(name='landcover')
     data.to_netcdf(f'{esapath}landcover.nc')
@@ -138,7 +150,7 @@ if ilstpre:
 if ilstpost:
     # second part: read in files, coordinate transformation, save as one file 
     #data = xr.open_mfdataset(f'{esapath}lst_monthly/lst_*.nc')['lst'] # OLD
-    data = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst']
+    data = xr.open_mfdataset(f'{esapath}lst_daily/lst*DAY.nc')['lst']
 
     # convert coords
     data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
@@ -146,6 +158,9 @@ if ilstpost:
 
     # convert kelvin to celcius
     data = data - 273.15
+
+    # fill missing days in data as fully nan
+    data = data.resample(time='D').asfreq()
 
     # create mask for less than 15 days of data
     mask = np.isnan(data).astype(float).resample(time='MS').sum() # how many nans
@@ -161,7 +176,7 @@ if ilstpost:
 if ilstpostinit:
     # second part: read in files, coordinate transformation, save as one file 
     #data = xr.open_mfdataset(f'{esapath}lst_monthly/lst_*.nc')['lst'] # OLD
-    data = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst']
+    data = xr.open_mfdataset(f'{esapath}lst_daily/lst*DAY.nc')['lst']
 
     # convert coords
     data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
@@ -169,6 +184,9 @@ if ilstpostinit:
 
     # convert kelvin to celcius
     data = data - 273.15
+
+    # fill missing days in data as fully nan
+    data = data.resample(time='D').asfreq()
 
     #  take all vars for init guess
     data = data.resample(time='MS').mean()
@@ -179,8 +197,8 @@ if ilstpostinit:
     data.to_netcdf(f'{esapath}surface_temperature_init.nc')
 
 if idtr:
-    day = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst'] #DEBUG
-    night = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*NIGHT.nc')['lst'] # DEBUG
+    day = xr.open_mfdataset(f'{esapath}lst_daily/lst*DAY.nc')['lst'] #DEBUG
+    night = xr.open_mfdataset(f'{esapath}lst_daily/lst*NIGHT.nc')['lst'] # DEBUG
 
     # calculate DTR
     data = np.abs(day - night)
@@ -188,6 +206,9 @@ if idtr:
     # convert coords
     data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
     data = data.sortby('lon')
+
+    # fill missing days in data as fully nan
+    data = data.resample(time='D').asfreq()
 
     # create mask for less than 15 days of data
     mask = np.isnan(data).astype(float).resample(time='MS').sum()
@@ -201,8 +222,8 @@ if idtr:
     data.to_netcdf(f'{esapath}diurnal_temperature_range.nc')
 
 if idtrinit:
-    day = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*DAY.nc')['lst'] #DEBUG
-    night = xr.open_mfdataset(f'{esapath}lst_daily/lst_200*NIGHT.nc')['lst'] # DEBUG
+    day = xr.open_mfdataset(f'{esapath}lst_daily/lst*DAY.nc')['lst'] #DEBUG
+    night = xr.open_mfdataset(f'{esapath}lst_daily/lst*NIGHT.nc')['lst'] # DEBUG
 
     # calculate DTR
     data = np.abs(day - night)
@@ -210,6 +231,9 @@ if idtrinit:
     # convert coords
     data.coords['lon'] = (data.coords['lon'] + 180) % 360 - 180
     data = data.sortby('lon')
+
+    # fill missing days in data as fully nan
+    data = data.resample(time='D').asfreq()
 
     # monthly agg
     data = data.resample(time='MS').mean()
@@ -282,6 +306,9 @@ if isnowpre:
             print(e)
             continue
 
+        # fill missing days in data as fully nan
+        data = data.resample(time='D').asfreq()
+
         # missing values are above 200
         data = data.where(data <= 100, np.nan)
 
@@ -299,10 +326,43 @@ if isnowpre:
         data = data.to_dataset(name='snow_cover_fraction')
         data.to_netcdf(f'{esapath}snow_yearly/snow_cover_fraction_{year}.nc')
 
+if isnowpreinit: 
+    filepath = landclimstoragepath + \
+               'ESA-CCI-Snow_SCFG/v2.0/5km_lat-lon_1d/original/AVHRR/'
+    years = np.arange(1995,2021)
+    
+    for year in years:
+        print(year)
+        try:
+            data = xr.open_mfdataset(f'{filepath}/{year}*.nc')['scfg']
+        except OSError as e:
+            print(e)
+            continue
+
+        # fill missing days in data as fully nan
+        data = data.resample(time='D').asfreq()
+
+        # missing values are above 200
+        data = data.where(data <= 100, np.nan)
+
+        # mean over all avail points
+        data = data.resample(time='MS').mean()
+
+        # regrid
+        regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
+        data = regridder(data)
+
+        # save
+        data = data.to_dataset(name='snow_cover_fraction')
+        data.to_netcdf(f'{esapath}snow_yearly/snow_cover_fraction_{year}_init.nc')
+
 if isnowpost:
-    data = xr.open_mfdataset(f'{esapath}snow_yearly/*.nc')
-    import IPython; IPython.embed()
+    data = xr.open_mfdataset(f'{esapath}snow_yearly/*[0-9].nc')
     data.to_netcdf(f'{esapath}snow_cover_fraction.nc')
+
+if isnowpostinit:
+    data = xr.open_mfdataset(f'{esapath}snow_yearly/*init.nc')
+    data.to_netcdf(f'{esapath}snow_cover_fraction_init.nc')
 
 # soil moisture:
 # missing values: below dense vegetation, swaths(?)
@@ -385,17 +445,32 @@ if iobs:
     # temperature
     filepath = landclimstoragepath + \
     'CRUTS/v4.06/0.5deg_lat-lon_1m/original/'
+    maskpath = landclimstoragepath + \
+    'CRUTS_stations/v3.22/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*tmp*.nc')['tmp']
-    mask = xr.open_mfdataset(f'{filepath}*tmp*.nc')['stn']
+    mask = xr.open_mfdataset(f'{maskpath}*tmp.st0.nc')['st0']
 
-    # mask areas with 0 station influence
-    data = data.where(mask != 0, np.nan)
-
-    data = data.sel(time=timeslice)
     data = data.resample(time='MS').mean() # M-mid to MS
+    mask = mask.resample(time='MS').mean() # M-mid to MS
+
+    # sel timeperiod
+    #data = data.sel(time=slice('1995','2013')) #DEBUG
+    #mask = mask.sel(time=slice('1995','2013')) #DEBUG
+    data = data.sel(time=timeslice).load()
+    mask = mask.sel(time=timeslice).load()
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
+    mask = regridder(mask)
+
+    # elongate mask DEBUG
+    mask = mask.reindex(time=data.time, method='ffill')
+
+    # mask areas with 0 station influence
+    #data = data.where(mask != 0, np.nan)
+
+    # mask areas with 0 station count
+    data = data.where(mask != 0, np.nan)
 
     data = data.to_dataset(name='temperature_obs')
     data.to_netcdf(f'{esapath}temperature_obs.nc')
@@ -404,16 +479,29 @@ if iobs:
     filepath = landclimstoragepath + \
     'CRUTS/v4.02/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*pre*.nc')['pre']
-    mask = xr.open_mfdataset(f'{filepath}*pre*.nc')['stn']
+    mask = xr.open_mfdataset(f'{maskpath}*pre.st0.nc')['st0']
 
-    # mask areas with 0 station influence
-    data = data.where(mask != 0, np.nan)
-
-    data = data.sel(time=timeslice)
     data = data.resample(time='MS').mean() # M-mid to MS
+    mask = mask.resample(time='MS').mean() # M-mid to MS
+
+    # sel timeperiod
+    #data = data.sel(time=slice('1995','2013')) #DEBUG
+    #mask = mask.sel(time=slice('1995','2013')) #DEBUG
+    data = data.sel(time=timeslice)
+    mask = mask.sel(time=timeslice)
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
+    mask = regridder(mask)
+
+    # elongate mask DEBUG
+    mask = mask.reindex(time=data.time, method='ffill')
+
+    # mask areas with 0 station influence
+    #data = data.where(mask != 0, np.nan)
+
+    # mask areas with 0 station count
+    data = data.where(mask != 0, np.nan)
 
     data = data.to_dataset(name='precipitation_obs')
     data.to_netcdf(f'{esapath}precipitation_obs.nc')
