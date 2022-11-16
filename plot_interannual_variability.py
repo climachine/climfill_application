@@ -20,15 +20,10 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'snow_water_equivalent']
 
 # read data
-orig = xr.open_dataset(f'{esapath}{testcase}/data_orig.nc')
+orig = xr.open_dataset(f'{esapath}data_orig_swe.nc') #DEBUG
 intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
-era5 = xr.open_dataset(f'{esapath}{testcase}/data_era5land.nc')
-
-# TODO remove after test2
-orig['precipitation'] = orig.precipitation*30.5*24
-intp['precipitation'] = intp.precipitation*30.5*24
-fill['precipitation'] = fill.precipitation*30.5*24
+era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
 
 # calc interannual variability
 # DEBUG
@@ -38,21 +33,21 @@ fill['precipitation'] = fill.precipitation*30.5*24
 #era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
 
 # plot correlation
-levels = np.arange(0,1.2,0.1)
-proj = ccrs.Robinson()
-transf = ccrs.PlateCarree()
-for varname in varnames:
-    fig = plt.figure(figsize=(25,5))
-    ax1 = fig.add_subplot(1,3,1, projection=proj)
-    ax2 = fig.add_subplot(1,3,2, projection=proj)
-    ax3 = fig.add_subplot(1,3,3, projection=proj)
-    xr.corr(orig[varname],era5[varname], dim='time').plot(ax=ax1, 
-            transform=transf, vmin=0, vmax=1, cmap='Greens', levels=levels)
-    xr.corr(intp[varname],era5[varname], dim='time').plot(ax=ax2, 
-            transform=transf, vmin=0, vmax=1, cmap='Greens', levels=levels)
-    xr.corr(fill[varname],era5[varname], dim='time').plot(ax=ax3, 
-            transform=transf, vmin=0, vmax=1, cmap='Greens', levels=levels)
-    plt.show()
+#levels = np.arange(0,1.2,0.1)
+#proj = ccrs.Robinson()
+#transf = ccrs.PlateCarree()
+#for varname in varnames:
+#    fig = plt.figure(figsize=(25,5))
+#    ax1 = fig.add_subplot(1,3,1, projection=proj)
+#    ax2 = fig.add_subplot(1,3,2, projection=proj)
+#    ax3 = fig.add_subplot(1,3,3, projection=proj)
+#    xr.corr(orig[varname],era5[varname], dim='time').plot(ax=ax1, 
+#            transform=transf, vmin=0, vmax=1, cmap='Greens', levels=levels)
+#    xr.corr(intp[varname],era5[varname], dim='time').plot(ax=ax2, 
+#            transform=transf, vmin=0, vmax=1, cmap='Greens', levels=levels)
+#    xr.corr(fill[varname],era5[varname], dim='time').plot(ax=ax3, 
+#            transform=transf, vmin=0, vmax=1, cmap='Greens', levels=levels)
+#    plt.show()
 
 # aggregate per ar6 region
 landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
@@ -69,26 +64,26 @@ proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
 
 for varname in varnames:
-    for region in orig.mask.values:
-    #region=17# DEBUG
-    
-        orig_tmp = orig[varname].sel(mask=region)
-        intp_tmp = intp[varname].sel(mask=region)
-        fill_tmp = fill[varname].sel(mask=region)
-        era5_tmp = era5[varname].sel(mask=region)
+    #for region in orig.mask.values:
+    region=17# DEBUG
 
-        fig = plt.figure(figsize=(20,5))
-        ax = fig.add_subplot(111)
+    orig_tmp = orig[varname].sel(mask=region)
+    intp_tmp = intp[varname].sel(mask=region)
+    fill_tmp = fill[varname].sel(mask=region)
+    era5_tmp = era5[varname].sel(mask=region)
 
-        corr_orig = np.round(xr.corr(orig_tmp,era5_tmp).item(),2)
-        corr_intp = np.round(xr.corr(intp_tmp,era5_tmp).item(),2)
-        corr_fill = np.round(xr.corr(fill_tmp,era5_tmp).item(),2)
+    fig = plt.figure(figsize=(20,5))
+    ax = fig.add_subplot(111)
 
-        orig_tmp.plot(ax=ax, label=f'orig {corr_orig}')
-        intp_tmp.plot(ax=ax, label=f'intp {corr_intp}')
-        fill_tmp.plot(ax=ax, label=f'fill {corr_fill}')
-        era5_tmp.plot(ax=ax, label='era5land')
+    corr_orig = np.round(xr.corr(orig_tmp,era5_tmp).item(),2)
+    corr_intp = np.round(xr.corr(intp_tmp,era5_tmp).item(),2)
+    corr_fill = np.round(xr.corr(fill_tmp,era5_tmp).item(),2)
 
-        ax.legend()
-        plt.show()
+    orig_tmp.plot(ax=ax, label=f'orig {corr_orig}')
+    intp_tmp.plot(ax=ax, label=f'intp {corr_intp}')
+    fill_tmp.plot(ax=ax, label=f'fill {corr_fill}')
+    era5_tmp.plot(ax=ax, label='era5land')
+
+    ax.legend()
+    plt.show()
 
