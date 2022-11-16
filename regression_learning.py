@@ -20,7 +20,8 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','snow_water_equivalent',
-            'temperature_obs','precipitation_obs','burned_area'] #hardcoded for now
+            'temperature_obs','precipitation_obs','burned_area',
+            'diurnal_temperature_range'] #hardcoded for now
 
 # read data
 # mask needs explicit bool otherwise lostmask is saved as int (0,1) and 
