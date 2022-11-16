@@ -26,16 +26,11 @@ mask = xr.open_dataset(f'{esapath}mask_orig.nc').to_array().load()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # constant maps include:
-# landcover, aboveground biomass
-# TODO include rest
-# TODO landcover is wrong res (180,360)
-#landcover = xr.open_dataset(f'{esapath}landcover_yearly/landcover_2003.nc')
-#constant_maps = landcover.lccs_class.rename('landcover')
-constant_maps = xr.full_like(data.isel(variable=0), np.nan).rename('latdata').drop('variable') #DEBUG
+# topography, aboveground biomass
+constant_maps = xr.open_dataset(f'{esapath}topography.nc')
 
 # step 2.1:  add longitude and latitude as predictors
 print(f'{datetime.now()} add lat lon...')
-constant_maps = constant_maps.to_dataset()
 londata, latdata = np.meshgrid(constant_maps.lon, constant_maps.lat)
 constant_maps['latdata'] = (("lat", "lon"), latdata)
 constant_maps['londata'] = (("lat", "lon"), londata)
@@ -77,7 +72,7 @@ data = data.fillna(varmeans)
 
 # step 2.5: concatenate constant maps and variables and features
 print(f'{datetime.now()} concatenate data and constant maps...')
-constant_maps = stack_constant_maps(data, constant_maps.drop('time')) #TODO w/o drop
+constant_maps = stack_constant_maps(data, constant_maps) 
 data = xr.concat([data, constant_maps], dim='variable')
 
 # assert that no missing values are still NaN
