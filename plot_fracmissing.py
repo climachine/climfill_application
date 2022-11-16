@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation', #for order of plots
-            'terrestrial_water_storage','snow_water_equivalent',
+            'terrestrial_water_storage','snow_cover_fraction',
             'temperature_obs','precipitation_obs','burned_area']
 #varnames = ['soil_moisture','surface_temperature','temperature_obs',
 #            'diurnal_temperature_range','burned_area',
@@ -86,7 +86,7 @@ maskmap.precipitation.plot(ax=ax3, cmap=cmap, vmin=0, vmax=1,
                            transform=transf, add_colorbar=False)
 maskmap.terrestrial_water_storage.plot(ax=ax4, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
-maskmap.snow_water_equivalent.plot(ax=ax9, cmap=cmap, vmin=0, vmax=1, 
+maskmap.snow_cover_fraction.plot(ax=ax9, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
 maskmap.temperature_obs.plot(ax=ax10, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
@@ -103,7 +103,7 @@ masktimeline.precipitation.T.plot(ax=ax7, cmap=cmap, vmin=0, vmax=1,
                            add_colorbar=False)
 masktimeline.terrestrial_water_storage.T.plot(ax=ax8, cmap=cmap, vmin=0, 
                            vmax=1, add_colorbar=False)
-masktimeline.snow_water_equivalent.T.plot(ax=ax13, cmap=cmap, vmin=0, vmax=1, 
+masktimeline.snow_cover_fraction.T.plot(ax=ax13, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
 masktimeline.temperature_obs.T.plot(ax=ax14, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
@@ -113,7 +113,7 @@ masktimeline.burned_area.T.plot(ax=ax16, cmap=cmap, vmin=0,
                            vmax=1, add_colorbar=False)
 
 for varname, ax in zip(varnames, (ax1,ax2,ax3,ax4,ax9,ax10,ax11,ax12)):
-    frac = int(np.round(frac_mis[varname].item(), 2)*100)
+    frac = np.round(frac_mis[varname].item(), 4)*100
     ax.set_title(f'{varname}: {frac}% missing')
 
 cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7]) # left bottom width height
