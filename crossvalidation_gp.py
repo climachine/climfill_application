@@ -2,6 +2,7 @@
 NAMESTRING
 """
 
+from datetime import datetime
 import argparse
 import itertools
 
@@ -28,7 +29,8 @@ data = xr.open_dataset(f'{esapath}{testcase}/data_crossval.nc').to_array()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # get list of variables
-varnames = data.coords['variable'].values
+varnames = list(data.coords['variable'].values)
+#varnames.remove('landcover')
 
 # monthly mean from whole timeseries, such that anomalies exist
 data_monthly = data.groupby('time.month').mean()
@@ -47,7 +49,9 @@ orig_anom = orig.groupby('time.month') - orig_monthly
 constant_value = [0.01, 0.1, 1, 10, 100]
 length_scale = [0.1,1,10,20,30,50,100]
 repeats = [1,2,5,10]
-npoints = [10,100,1000,2000] 
+npoints = [10,100,1000]  # 1000 max bec 5mins per iteration for 2000; but if CV 
+                         # result is that 1000 is best for all vars just use 
+                         # 2000 in real interpolation bec very likely better
 parameters = [constant_value, length_scale, repeats, npoints]
 #parameters = [[10],[1],[1],[10,20]] # DEBUG
 paramnames = ['constant_value','length_scale','repeats','npoints']
@@ -55,6 +59,10 @@ paramnames = ['constant_value','length_scale','repeats','npoints']
 # cross-validate on parameters and folds (cubes)
 params_combinations = list(itertools.product(*parameters))
 res = []
+
+print(f'{datetime.now()} {len(params_combinations)} parameter combination to test ...')
+import warnings # Don't display ConvergenceWarning since bounds are updated
+warnings.simplefilter('ignore')
 
 for params in params_combinations:
     print(f'{datetime.now()} parameter combination {params} ...')
