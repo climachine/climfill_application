@@ -49,6 +49,7 @@ ds_out = xr.Dataset({'lat': (['lat'], np.arange(-89.75,90, 0.5)), # same as cdo_
                      'lon': (['lon'], np.arange(-180, 180,0.5))})
 
 # flags for running scripts
+itopo = False
 ifire = False
 ipermafrost = False
 ilandcover = False
@@ -65,9 +66,18 @@ ism = False
 isminit = False
 itws = False
 iprecip = False
-iobs = True
+iobs = False
 iobsinit = False
 inetrad = False
+
+# topo
+if itopo:
+    data = xr.open_mfdataset(f'{esapath}topography.nc')
+
+    regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
+    data = regridder(data)
+
+    data.to_netcdf(f'{esapath}topography.nc')
 
 # fire
 if ifire:
