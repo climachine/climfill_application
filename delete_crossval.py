@@ -34,7 +34,8 @@ mask = mask.where(landmask, np.nan) # is needed for calc of n_obs
 
 # get varnames
 #varnames =  list(data.keys()) # unsorted, but works on dataset
-varnames = data.coords['variable'].values
+varnames = list(data.coords['variable'].values)
+varnames.remove('landcover')
 
 # delete values for verification
 for varname in varnames:

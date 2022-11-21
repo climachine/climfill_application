@@ -31,6 +31,7 @@ lst_init = xr.open_dataset(f'{esapath}surface_temperature_init.nc').to_array()
 sm_init = xr.open_dataset(f'{esapath}soil_moisture_init.nc').to_array()
 t2m_init = xr.open_dataset(f'{esapath}temperature_obs_init.nc').to_array()
 pre_init = xr.open_dataset(f'{esapath}precipitation_obs_init.nc').to_array()
+scf_init = xr.open_dataset(f'{esapath}snow_cover_fraction_init.nc').to_array()
 
 # fill 
 print(f'{datetime.now()} fill initial guess...')
@@ -39,6 +40,7 @@ data.loc['surface_temperature'] = data.loc['surface_temperature'].fillna(lst_ini
 data.loc['soil_moisture'] = data.loc['soil_moisture'].fillna(sm_init).squeeze()
 data.loc['temperature_obs'] = data.loc['temperature_obs'].fillna(t2m_init).squeeze()
 data.loc['precipitation_obs'] = data.loc['precipitation_obs'].fillna(pre_init).squeeze()
+data.loc['snow_cover_fraction'] = data.loc['snow_cover_fraction'].fillna(scf_init).squeeze()
 
 # save to netcdf
 print(f'{datetime.now()} save initial guess...')

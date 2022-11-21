@@ -5,6 +5,7 @@ NAMESTRING
 # TODO logical problem: CV over clusters, but clusters may not only include
 # CV year. solve
 
+from datetime import datetime
 import argparse
 import itertools
 
@@ -31,7 +32,8 @@ data = xr.open_dataset(f'{esapath}{testcase}/data_crossval.nc').to_array()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # get list of variables
-varnames = data.coords['variable'].values
+varnames = list(data.coords['variable'].values)
+#varnames.remove('landcover')
 
 # timeslice
 data = data.sel(time=crossvalidation_year)
@@ -42,9 +44,9 @@ data_monthly = data.groupby('time.month').mean()
 orig_monthly = orig.groupby('time.month').mean()
 
 # select ranges of crossval parameters RBFInterp
-neighbors = [20,50,100]
+neighbors = [50,100,200]
 smoothing = [0, 0.1, 1, 10, 100, 1000]
-degree = [1,2,3]
+degree = [1,2] # degree 3 removed bec lots of errors and never best param
 parameters = [neighbors, smoothing, degree]
 #parameters = [[20,50],[10],[1,2]] # DEBUG 
 paramnames = ['neighbors','smoothing','degree']
@@ -52,6 +54,8 @@ paramnames = ['neighbors','smoothing','degree']
 # cross-validate on parameters and folds (cubes)
 params_combinations = list(itertools.product(*parameters))
 res = []
+
+print(f'{datetime.now()} {len(params_combinations)} parameter combination to test ...')
 
 for params in params_combinations:
     print(f'{datetime.now()} parameter combination {params} ...')
@@ -66,7 +70,7 @@ for params in params_combinations:
     res.append([*params, *rmse.values])
 
 df = pd.DataFrame(res)
-df.columns = paramnames + varnames.tolist()
+df.columns = paramnames + varnames
 df = df.replace(0, np.nan) # zero rmse is unrealistic and extremely likely due to Singularity Error TODO implement somehow differently? # problem: if only occurs in individual months, overall rmse is underestimated
 print(df.set_index(paramnames).idxmin())
 import IPython; IPython.embed()
