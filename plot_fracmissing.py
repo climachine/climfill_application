@@ -12,15 +12,14 @@ import matplotlib.pyplot as plt
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation', #for order of plots
             'terrestrial_water_storage','snow_cover_fraction',
-            'temperature_obs','precipitation_obs','burned_area']
+            'temperature_obs','precipitation_obs','diurnal_temperature_range']
 #varnames = ['soil_moisture','surface_temperature','temperature_obs',
 #            'diurnal_temperature_range','burned_area',
 #            'precipitation','precipitation_obs','snow_cover_fraction',
 #            'terrestrial_water_storage', 'land_cover']
 
 # TODO
-# weird months with high obs in lst?
-# include dtr
+# include burned area
 
 # open data
 data = xr.open_dataset(f'{esapath}/data_orig.nc')
@@ -57,10 +56,10 @@ maskmap = maskmap.where(oceanmask, -10)
 # plot
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
-cmap = plt.get_cmap('YlOrBr_r')
+cmap = plt.get_cmap('YlOrBr')
 cmap.set_under('aliceblue')
 
-fig = plt.figure(figsize=(20,5))
+fig = plt.figure(figsize=(17,10))
 ax1 = fig.add_subplot(4,4,1, projection=proj)
 ax2 = fig.add_subplot(4,4,2, projection=proj)
 ax3 = fig.add_subplot(4,4,3, projection=proj)
@@ -92,7 +91,7 @@ maskmap.temperature_obs.plot(ax=ax10, cmap=cmap, vmin=0, vmax=1,
                            transform=transf, add_colorbar=False)
 maskmap.precipitation_obs.plot(ax=ax11, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
-maskmap.burned_area.plot(ax=ax12, cmap=cmap, vmin=0, vmax=1, 
+maskmap.diurnal_temperature_range.plot(ax=ax12, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
 
 masktimeline.soil_moisture.T.plot(ax=ax5, cmap=cmap, vmin=0, vmax=1, 
@@ -109,14 +108,14 @@ masktimeline.temperature_obs.T.plot(ax=ax14, cmap=cmap, vmin=0, vmax=1,
                            add_colorbar=False)
 masktimeline.precipitation_obs.T.plot(ax=ax15, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
-masktimeline.burned_area.T.plot(ax=ax16, cmap=cmap, vmin=0, 
+masktimeline.diurnal_temperature_range.T.plot(ax=ax16, cmap=cmap, vmin=0, 
                            vmax=1, add_colorbar=False)
 
 for varname, ax in zip(varnames, (ax1,ax2,ax3,ax4,ax9,ax10,ax11,ax12)):
-    frac = np.round(frac_mis[varname].item(), 4)*100
+    frac = np.around(frac_mis[varname].item()*100, decimals=2)
     ax.set_title(f'{varname}: {frac}% missing')
 
-cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7]) # left bottom width height
+cbar_ax = fig.add_axes([0.95, 0.15, 0.02, 0.7]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax)
 cbar.set_label('fraction of missing values')
 
@@ -153,4 +152,5 @@ ax13.set_facecolor('lightgrey')
 ax14.set_facecolor('lightgrey')
 ax15.set_facecolor('lightgrey')
 ax16.set_facecolor('lightgrey')
-plt.show()
+#plt.show()
+plt.savefig('frac_missing.png', dpi=300)
