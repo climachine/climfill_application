@@ -4,6 +4,7 @@ NAMESTRING
 
 import argparse
 import numpy as np
+import regionmask
 from scipy.spatial.distance import jensenshannon as js
 import xarray as xr
 import matplotlib.pyplot as plt
@@ -21,25 +22,24 @@ def calc_rmse(dat1, dat2, dim):
 
 # NOTE:
 # TWS does not have any originally missing values in 2004
-# soil moisture does not have any CV values, prob because hard to catch them
-#      maybe make sure it is 10% missing per variable and not overall? # DONE in test2
-# naturally gap-free variables have gaps. # change! # update: no since time
-#      elongation is also a gap!
 # JS not possible bec needs times where all 8 vars are observed (i.e. in the
 #      verification set) at the same time. ditched for now
+# INIT GUESS LEFT OUT BEC HAS MISSING VALUES AND IS THEREFORE MUCH BETTER (ON 
+# THE NOT MISSING POINTS OBVSLY) AND ON THE MISSING VALUES IT IS REPRESENTED
+# IN INTP
 
 # read data
-orig = xr.open_dataset(f'{esapath}data_orig_swe.nc')
+orig = xr.open_dataset(f'{esapath}data_orig.nc')
 intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 
-mask_orig = xr.open_dataset(f'{esapath}mask_orig_swe.nc')
+mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
 mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
 
 # (optional) calculate anomalies
-orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
-fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+#intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
+#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # select verification year
 mask_orig = mask_orig.sel(time=verification_year).load()
@@ -58,14 +58,13 @@ fill = fill.where(mask_cv)
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','snow_water_equivalent',
+            'terrestrial_water_storage','snow_cover_fraction',
             'temperature_obs','precipitation_obs','burned_area'] #hardcoded for now
 orig = orig.to_array().reindex(variable=varnames)
 intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
 
 # calc metrics
-import IPython; IPython.embed()
 corr_intp = xr.corr(orig, intp, dim=('lat','lon','time'))
 corr_fill = xr.corr(orig, fill, dim=('lat','lon','time'))
 rmse_intp = calc_rmse(orig, intp, dim=('lat','lon','time'))
