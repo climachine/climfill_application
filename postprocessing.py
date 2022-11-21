@@ -7,20 +7,12 @@ from datetime import datetime
 import numpy as np
 import xarray as xr
 
+from climfill.postprocessing import to_latlon
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
 args = parser.parse_args()
 testcase = args.testcase
-
-def to_latlon(data, landmask): # TODO to climfill package
-    shape = landmask.shape
-    landlat, landlon = np.where(landmask)
-    tmp = xr.DataArray(np.full((data.coords['variable'].size,data.coords['time'].size,shape[0],shape[1]),np.nan), 
-                       coords=[data.coords['variable'], data.coords['time'], 
-                               landmask.coords['lat'], landmask.coords['lon']], 
-                       dims=['variable','time','lat','lon'])
-    tmp.values[:,:,landlat,landlon] = data
-    return tmp
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
