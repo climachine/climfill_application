@@ -22,7 +22,7 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 # read data
 print(f'{datetime.now()} read data...')
 data = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').to_array().load()
-mask = xr.open_dataset(f'{esapath}mask_orig.nc').to_array().load()
+mask = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc').to_array().load() #needs to be crossval such taht verification points are updated
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # constant maps include:
