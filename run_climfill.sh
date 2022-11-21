@@ -1,5 +1,5 @@
 #!/bin/bash
-TESTCASE='test3'
+TESTCASE='test4'
 N_CLUSTERS=30
 COUNT=$(expr $N_CLUSTERS - 1)
 
