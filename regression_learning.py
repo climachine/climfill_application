@@ -17,10 +17,12 @@ testcase = args.testcase
 c = args.cluster
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
+esapath = '/cluster/work/climate/bverena/climfill_esa_cci/' # euler
 
 varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','snow_water_equivalent',
-            'temperature_obs','precipitation_obs','burned_area'] #hardcoded for now
+            'terrestrial_water_storage','snow_cover_fraction',
+            'temperature_obs','precipitation_obs','burned_area',
+            'diurnal_temperature_range'] #hardcoded for now
 
 # read data
 # mask needs explicit bool otherwise lostmask is saved as int (0,1) and 
@@ -38,7 +40,7 @@ rf_settings = {'n_estimators': 300,  # CV and consult table
                'max_samples': 0.5, 
                'bootstrap': True,
                'warm_start': False,
-               'n_jobs': 30} # depends on your number of cpus 
+               'n_jobs': 128} # depends on your number of cpus 
 regr_dict = {varname: RandomForestRegressor(**rf_settings) for varname in varnames}
 verbose = 1
 maxiter = 20
