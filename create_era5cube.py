@@ -24,6 +24,7 @@ swvl4 = xr.open_mfdataset(f'{era5landpath}era5-land_recent.swvl4.*.nc')
 skt = xr.open_mfdataset(f'{era5landpath}era5-land_recent.skt.*.nc')
 tp = xr.open_mfdataset(f'{era5landpathsum}era5-land_recent.tp.*.nc')
 sd = xr.open_mfdataset(f'{era5landpath}era5-land_recent.sd.*.nc')
+scf = xr.open_mfdataset(f'{era5landpath}era5-land_recent.snowc.*.nc')
 t2m = xr.open_mfdataset(f'{era5landpath}era5-land_recent.t2m.*.nc')
 cl = xr.open_dataset(f'{era5pathconstant}era5_deterministic_recent.cl.025deg.time-invariant.nc')
 dl = xr.open_dataset(f'{era5pathconstant}era5_deterministic_recent.dl.025deg.time-invariant.nc')
@@ -53,7 +54,7 @@ skt = skt - 273.15
 
 # merge to one dat
 data = xr.concat([swvl1.to_array(),skt.to_array(),tp.to_array(),
-                  tws.to_array(),sd.to_array(),t2m.to_array()], dim='variable')
+                  tws.to_array(),scf.to_array(),t2m.to_array()], dim='variable')
 
 # sel timeslice
 data = data.sel(time=timeslice)
@@ -66,9 +67,9 @@ data = regridder(data)
 data = data.to_dataset('variable')
 data = data.rename(swvl1='soil_moisture',skt='surface_temperature',
                    tp='precipitation',tws='terrestrial_water_storage',
-                   t2m='temperature_obs', sd='snow_water_equivalent')
+                   t2m='temperature_obs', snowc='snow_cover_fraction')
 tp_obs = data.precipitation.copy()
 data['precipitation_obs'] = tp_obs
 
 # save
-data.to_netcdf(f'{esapath}/test2/data_era5land.nc')
+data.to_netcdf(f'{esapath}/data_era5land.nc')
