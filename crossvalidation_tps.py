@@ -70,7 +70,7 @@ for params in params_combinations:
     res.append([*params, *rmse.values])
 
 df = pd.DataFrame(res)
-df.columns = paramnames + varnames.tolist()
+df.columns = paramnames + varnames
 df = df.replace(0, np.nan) # zero rmse is unrealistic and extremely likely due to Singularity Error TODO implement somehow differently? # problem: if only occurs in individual months, overall rmse is underestimated
 print(df.set_index(paramnames).idxmin())
 import IPython; IPython.embed()
