@@ -17,20 +17,20 @@ testcase = args.testcase
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','temperature_obs','precipitation_obs',
-            'snow_water_equivalent']
+            'snow_cover_fraction']
 
 # read data
-orig = xr.open_dataset(f'{esapath}data_orig_swe.nc') #DEBUG
+orig = xr.open_dataset(f'{esapath}data_orig.nc') 
 intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
 
 # calc interannual variability
 # DEBUG
-#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-#intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
-#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
-#era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
+orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
+fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
 
 # plot correlation
 #levels = np.arange(0,1.2,0.1)
@@ -65,7 +65,7 @@ transf = ccrs.PlateCarree()
 
 for varname in varnames:
     #for region in orig.mask.values:
-    region=17# DEBUG
+    region=22# DEBUG
 
     orig_tmp = orig[varname].sel(mask=region)
     intp_tmp = intp[varname].sel(mask=region)
