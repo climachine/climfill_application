@@ -54,7 +54,7 @@ ifire = False
 ipermafrost = False
 ilandcover = False
 ilstpre = False
-ilstpost = False
+ilstpost = True
 ilstpostinit = False
 idtr = False
 idtrinit = False
@@ -155,7 +155,6 @@ if ilstpre:
             with open('run_lst_regrid_cdo.sh','a') as file:
                 file.write(cmd)
 
-# TODO from daily
 # note that 1995-08-01 is manually removed after ilstpre because cdo regrids wrongly
 if ilstpost:
     # second part: read in files, coordinate transformation, save as one file 
@@ -174,14 +173,15 @@ if ilstpost:
 
     # create mask for less than 15 days of data
     mask = np.isnan(data).astype(float).resample(time='MS').sum() # how many nans
-    mask = mask <= 15 # where less than 15 nans
+    import IPython; IPython.embed()
+    mask = mask <= 5 # where less than 15 nans
     data = data.resample(time='MS').mean()
     data = data.where(mask) # keep where less than 15 nans
 
     data = data.sel(time=timeslice)
 
     data = data.to_dataset(name='surface_temperature')
-    data.to_netcdf(f'{esapath}surface_temperature.nc')
+    data.to_netcdf(f'{esapath}surface_temperature_tmp.nc')
 
 if ilstpostinit:
     # second part: read in files, coordinate transformation, save as one file 
