@@ -2,16 +2,10 @@
 NAMESTRING
 """
 
-import argparse
 import itertools
 import numpy as np
 import pandas as pd
 import xarray as xr
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--testcase', '-t', dest='testcase', type=str)
-args = parser.parse_args()
-testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation',
