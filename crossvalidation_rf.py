@@ -2,8 +2,8 @@
 NAMESTRING
 """
 
-# TODO logical problem: CV over clusters, but clusters may not only include
-# CV year. solve
+# running time
+# from 19-11 10:30 to
 
 from datetime import datetime
 import argparse
@@ -49,9 +49,9 @@ n_estimators = [500,300]
 min_samples_leaf = [1,10,0.05,0.1]
 max_samples = [1.0,0.5,0.3,0.1]
 max_features = [0.9, 0.5, 0.3]
-maxiter = [20,10]
-parameters = [n_estimators,min_samples_leaf, max_samples, max_features, maxiter]
-paramnames = ['n_estimators','min_samples_leaf','max_samples','max_features','maxiter']
+#maxiter = [20,10] # maxiter cannot be different between variables, cv does not make sense
+parameters = [n_estimators,min_samples_leaf, max_samples, max_features]
+paramnames = ['n_estimators','min_samples_leaf','max_samples','max_features']
 #parameters = [[1,10,100],[0.05],[0.5],[0.5],[10]] #DEBUG
 
 # cross-validate on parameters and folds (cubes)
