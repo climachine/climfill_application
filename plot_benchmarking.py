@@ -30,6 +30,7 @@ def calc_rmse(dat1, dat2, dim):
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
+intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
 
@@ -39,6 +40,7 @@ era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
 # (optional) calculate anomalies
 orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
 era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
+intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
 fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # select verification year
@@ -62,6 +64,7 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'temperature_obs','precipitation_obs','burned_area'] #hardcoded for now
 orig = orig.to_array().reindex(variable=varnames)
 era5 = era5.to_array().reindex(variable=varnames)
+intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
 
 # aggregate to regions
@@ -72,18 +75,23 @@ regions = regions.where(~np.isnan(landmask))
 
 orig = orig.groupby(regions).mean()
 era5 = era5.groupby(regions).mean()
+intp = intp.groupby(regions).mean()
 fill = fill.groupby(regions).mean()
 
 # calc metrics
 corr_orig = xr.corr(orig, era5, dim=('time'))
+corr_intp = xr.corr(intp, era5, dim=('time'))
 corr_fill = xr.corr(fill, era5, dim=('time'))
 rmse_orig = calc_rmse(orig, era5, dim=('time'))
+rmse_intp = calc_rmse(intp, era5, dim=('time'))
 rmse_fill = calc_rmse(fill, era5, dim=('time'))
 
 # mean over regions
 corr_orig = corr_orig.mean(dim='mask')
+corr_intp = corr_intp.mean(dim='mask')
 corr_fill = corr_fill.mean(dim='mask')
 rmse_orig = rmse_orig.mean(dim='mask')
+rmse_intp = rmse_intp.mean(dim='mask')
 rmse_fill = rmse_fill.mean(dim='mask')
 
 # plot
@@ -93,16 +101,18 @@ ax2 = fig.add_subplot(212)
 x_pos =np.arange(0,2*len(corr_orig),2)
 wd = 0.3
 
-ax1.bar(x_pos, corr_orig, width=wd, label='orig')
+ax1.bar(x_pos-wd, corr_orig, width=wd, label='orig')
+ax1.bar(x_pos, corr_intp, width=wd, label='intp')
 ax1.bar(x_pos+wd, corr_fill, width=wd, label='fill')
 
-ax2.bar(x_pos, rmse_orig, width=wd)
+ax2.bar(x_pos-wd, rmse_orig, width=wd)
+ax2.bar(x_pos, rmse_intp, width=wd)
 ax2.bar(x_pos+wd, rmse_fill, width=wd)
 
 ax1.set_xticks([])
 ax1.legend()
 ax2.set_xticks(x_pos+0.5*wd, varnames, rotation=90)
-ax2.set_ylim([0,40]) #TODO debug remove
+ax2.set_ylim([0,15]) #TODO debug remove
 ax1.set_xlim([-1,16])
 ax2.set_xlim([-1,16])
 
