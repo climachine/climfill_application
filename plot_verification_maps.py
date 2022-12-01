@@ -94,7 +94,12 @@ landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(mask_cv
 
 for varname, ax in zip(varnames, axes):
     corrfill = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time')
+    corrintp = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time')
     corrfill = aggregate_to_regions(corrfill)
+    corrintp = aggregate_to_regions(corrintp)
+
+    # calculate skill score
+    #skillscore = 1 - (1-corrfill)/(1-corrintp)
 
     landmask.plot(ax=ax, add_colorbar=False, cmap='Greys', transform=transf, vmin=-2, vmax=10)
     corrfill.plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
