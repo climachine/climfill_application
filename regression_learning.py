@@ -17,7 +17,7 @@ testcase = args.testcase
 c = args.cluster
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
-esapath = '/cluster/work/climate/bverena/climfill_esa_cci/' # euler
+#esapath = '/cluster/work/climate/bverena/climfill_esa_cci/' # euler
 
 varnames = ['soil_moisture','surface_temperature','precipitation', 
             'terrestrial_water_storage','snow_cover_fraction',
@@ -34,20 +34,60 @@ mask = xr.open_dataset(f'{esapath}{testcase}/clusters/maskcluster_init_c{c:02d}.
 
 # gapfilling
 print(f'{datetime.now()} gapfilling...')
-rf_settings = {'n_estimators': 300,  # CV and consult table
-               'min_samples_leaf': 2,
-               'max_features': 0.5, 
-               'max_samples': 0.5, 
-               'bootstrap': True,
-               'warm_start': False,
-               'n_jobs': 128} # depends on your number of cpus 
-regr_dict = {varname: RandomForestRegressor(**rf_settings) for varname in varnames}
+rf_kwargs = {'burned_area':              {'n_estimators': 300, # CVed now!
+                                          'min_samples_leaf': 1, 
+                                          'max_samples': 1,
+                                          'max_features': 0.5},
+             'soil_moisture':            {'n_estimators': 300,
+                                          'min_samples_leaf': 10, 
+                                          'max_samples': 1.0,
+                                          'max_features': 0.3},
+             'precipitation_obs':        {'n_estimators': 500, 
+                                          'min_samples_leaf': 10, 
+                                          'max_samples': 0.5,
+                                          'max_features': 0.9},
+             'precipitation':            {'n_estimators': 500, 
+                                          'min_samples_leaf': 10, 
+                                          'max_samples': 0.5,
+                                          'max_features': 0.5},
+             'snow_cover_fraction':      {'n_estimators': 500, 
+                                          'min_samples_leaf': 10, 
+                                          'max_samples': 0.1,
+                                          'max_features': 0.5},
+             'landcover':                {'n_estimators': 300, 
+                                          'min_samples_leaf': 2, 
+                                          'max_samples': 0.5,
+                                          'max_features': 0.5},
+             'surface_temperature':      {'n_estimators': 300, 
+                                          'min_samples_leaf': 10, 
+                                          'max_samples': 0.3,
+                                          'max_features': 0.5},
+             'temperature_obs':          {'n_estimators': 300, 
+                                          'min_samples_leaf': 10, 
+                                          'max_samples': 1.0,
+                                          'max_features': 0.5},
+             'terrestrial_water_storage':{'n_estimators': 300, 
+                                          'min_samples_leaf': 0.05, 
+                                          'max_samples': 0.5,
+                                          'max_features': 0.3},
+             'diurnal_temperature_range':{'n_estimators': 500, 
+                                          'min_samples_leaf': 10, 
+                                          'max_samples': 0.1,
+                                          'max_features': 0.3}}
+#rf_settings = {'n_estimators': 300,  # CV and consult table
+#               'min_samples_leaf': 2,
+#               'max_features': 0.5, 
+#               'max_samples': 0.5, 
+#               'bootstrap': True,
+#               'warm_start': False,
+#               'n_jobs': 30} # depends on your number of cpus 
+regr_dict = {varname: RandomForestRegressor(**rf_kwargs[varname]) for varname in varnames}
 verbose = 1
 maxiter = 20
 
 impute = Imputation(maxiter=maxiter)
 data_gapfilled, test = impute.impute(
-    data, mask, regr_dict, verbose=verbose
+    data=data, mask=mask, regr_dict=regr_dict, verbose=verbose
 )
 
 data_gapfilled = data_gapfilled.sel(variable=varnames)
