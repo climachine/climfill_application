@@ -42,9 +42,9 @@ era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
 #mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
 
 # (optional) calculate anomalies
-#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-#intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
-#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
+fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # select verification year
 #mask_orig = mask_orig.sel(time=verification_year).load()
@@ -103,7 +103,7 @@ for varname, ax in zip(varnames, axes):
     corrfill = expand_to_worldmap(corrfill,regions)
 
     landmask.plot(ax=ax, add_colorbar=False, cmap='Greys', transform=transf, vmin=-2, vmax=10)
-    (corrfill - corrorig).plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
+    corrfill.plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
                                levels=levels, add_colorbar=False)
     regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
                                                  ax=ax, add_label=False, projection=transf)
