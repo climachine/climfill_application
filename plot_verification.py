@@ -37,9 +37,9 @@ mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
 mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
 
 # (optional) calculate anomalies
-#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-#intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
-#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
+fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # select verification year
 mask_orig = mask_orig.sel(time=verification_year).load()
@@ -58,8 +58,8 @@ fill = fill.where(mask_cv)
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','snow_cover_fraction',
-            'temperature_obs','precipitation_obs','burned_area'] #hardcoded for now
+            'terrestrial_water_storage','temperature_obs','precipitation_obs',
+            'burned_area','diurnal_temperature_range','snow_cover_fraction'] 
 orig = orig.to_array().reindex(variable=varnames)
 intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
@@ -86,9 +86,9 @@ ax2.bar(x_pos+wd, rmse_fill, width=wd)
 ax1.set_xticks([])
 ax1.legend()
 ax2.set_xticks(x_pos+0.5*wd, varnames, rotation=90)
-ax2.set_ylim([0,40]) #TODO debug remove
-ax1.set_xlim([-1,16])
-ax2.set_xlim([-1,16])
+ax2.set_ylim([0,45]) #TODO debug remove
+ax1.set_xlim([-1,18])
+ax2.set_xlim([-1,18])
 
 ax1.set_title('pearson correlation of verification pts')
 ax2.set_title('RSME of verification pts')
