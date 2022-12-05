@@ -4,6 +4,7 @@ NAMESTRING
 
 # running time
 # from 19-11 10:30 to
+# update MODIS: with debug params, change in sm, without not; indep of varnames list
 
 from datetime import datetime
 import argparse
@@ -44,6 +45,9 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'temperature_obs','precipitation_obs','burned_area',
             'diurnal_temperature_range'] #hardcoded for now
 
+# DEBUG: only modis CV 
+#varnames = ['surface_temperature','diurnal_temperature_range']
+
 # select ranges of crossval parameters RBFInterp
 n_estimators = [500,300]
 min_samples_leaf = [1,10,0.05,0.1]
@@ -68,17 +72,14 @@ landlat, landlon = np.where(landmask)
 data = data.isel(lon=xr.DataArray(landlon, dims='landpoints'),
                  lat=xr.DataArray(landlat, dims='landpoints'))
 data = data.stack(datapoints=('time', 'landpoints')).reset_index('datapoints').T
-data = data.sel(variable=varnames)
 
 orig = orig.isel(lon=xr.DataArray(landlon, dims='landpoints'),
                  lat=xr.DataArray(landlat, dims='landpoints'))
 orig = orig.stack(datapoints=('time', 'landpoints')).reset_index('datapoints').T
-orig = orig.sel(variable=varnames)
 
 mask = mask.isel(lon=xr.DataArray(landlon, dims='landpoints'),
                  lat=xr.DataArray(landlat, dims='landpoints'))
 mask = mask.stack(datapoints=('time', 'landpoints')).reset_index('datapoints').T
-mask = mask.sel(variable=varnames)
 
 for params in params_combinations:
 
@@ -94,6 +95,7 @@ for params in params_combinations:
     tmp, _ = impute.impute(data.copy(deep=True), mask.copy(deep=True),
                            regr_dict, verbose=0)
     
+    tmp = tmp.sel(variable=varnames)
     # postprocessing both for DEBUGGING 
     #from climfill.postprocessing import to_latlon
     #tmp = tmp.set_index(datapoints=('time','landpoints')).unstack('datapoints')
@@ -105,7 +107,8 @@ for params in params_combinations:
     #import IPython; IPython.embed()
     # calc rmse
     rmse = calc_rmse(tmp, orig, dim='datapoints')
-    print(f'{datetime.now()} rmse sm: {rmse.sel(variable="soil_moisture").item()} ...')
+    print(f'{datetime.now()} rmse: {rmse.sel(variable="surface_temperature").item()} ...')
+    import IPython; IPython.embed()
     res.append([*params, *rmse.values])
 
 import IPython; IPython.embed()
