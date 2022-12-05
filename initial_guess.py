@@ -26,8 +26,8 @@ data = data.to_array().load()
 
 # read initial guess
 print(f'{datetime.now()} read initial guess data ...')
-dtr_init = xr.open_dataset(f'{esapath}diurnal_temperature_range_init.nc').to_array()
-lst_init = xr.open_dataset(f'{esapath}surface_temperature_init.nc').to_array()
+dtr_init = xr.open_dataset(f'{esapath}modis_dtr_init.nc').to_array()
+lst_init = xr.open_dataset(f'{esapath}modis_temperature_init.nc').to_array()
 sm_init = xr.open_dataset(f'{esapath}soil_moisture_init.nc').to_array()
 t2m_init = xr.open_dataset(f'{esapath}temperature_obs_init.nc').to_array()
 pre_init = xr.open_dataset(f'{esapath}precipitation_obs_init.nc').to_array()
