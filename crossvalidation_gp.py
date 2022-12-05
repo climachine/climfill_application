@@ -32,6 +32,11 @@ landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 varnames = list(data.coords['variable'].values)
 #varnames.remove('landcover')
 
+# DEBUG: only modis CV
+varnames = ['surface_temperature','diurnal_temperature_range']
+data = data.sel(variable=varnames)
+orig = orig.sel(variable=varnames)
+
 # monthly mean from whole timeseries, such that anomalies exist
 data_monthly = data.groupby('time.month').mean()
 orig_monthly = orig.groupby('time.month').mean()

@@ -33,7 +33,11 @@ landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # get list of variables
 varnames = list(data.coords['variable'].values)
-#varnames.remove('landcover')
+
+# DEBUG: only modis CV
+varnames = ['surface_temperature','diurnal_temperature_range']
+data = data.sel(variable=varnames)
+orig = orig.sel(variable=varnames)
 
 # timeslice
 data = data.sel(time=crossvalidation_year)
