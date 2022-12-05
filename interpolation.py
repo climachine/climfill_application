@@ -88,10 +88,14 @@ kriging_kwargs = {'burned_area':              {'constant_value': 1, # CVed!
                                                'length_scale': 10, 
                                                'npoints': 100, 
                                                'repeats': 5},
-                  'surface_temperature':      {'constant_value': 10, 
-                                               'length_scale': 30, 
-                                               'npoints': 10, 
-                                               'repeats': 1},
+                  #'surface_temperature':      {'constant_value': 10,  # ESA
+                  #                             'length_scale': 30, 
+                  #                             'npoints': 10, 
+                  #                             'repeats': 1},
+                  'surface_temperature':      {'constant_value': 10,  # MODIS
+                                               'length_scale': 1, 
+                                               'npoints': 100, 
+                                               'repeats': 5},
                   'temperature_obs':          {'constant_value': 100, 
                                                'length_scale': 10, 
                                                'npoints': 100, 
@@ -100,10 +104,14 @@ kriging_kwargs = {'burned_area':              {'constant_value': 1, # CVed!
                                                'length_scale': 1, 
                                                'npoints': 100, 
                                                'repeats': 10},
-                  'diurnal_temperature_range':{'constant_value': 10, 
-                                               'length_scale': 50, 
+                  #'diurnal_temperature_range':{'constant_value': 10, # ESA
+                  #                             'length_scale': 50, 
+                  #                             'npoints': 10, 
+                  #                             'repeats': 10}}
+                  'diurnal_temperature_range':{'constant_value': 100, 
+                                               'length_scale': 30, 
                                                'npoints': 10, 
-                                               'repeats': 10}}
+                                               'repeats': 5}}
 import warnings # DEBUG
 warnings.simplefilter('ignore')
 data_anom = gapfill_kriging(data_anom.copy(deep=True), landmask, kriging_kwargs)
