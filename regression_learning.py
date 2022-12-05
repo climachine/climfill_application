@@ -60,7 +60,7 @@ rf_kwargs = {'burned_area':              {'n_estimators': 300, # CVed now!
                                           'max_features': 0.5},
              'surface_temperature':      {'n_estimators': 300, 
                                           'min_samples_leaf': 10, 
-                                          'max_samples': 0.3,
+                                          'max_samples': 0.5, #0.3 esa
                                           'max_features': 0.5},
              'temperature_obs':          {'n_estimators': 300, 
                                           'min_samples_leaf': 10, 
@@ -72,8 +72,8 @@ rf_kwargs = {'burned_area':              {'n_estimators': 300, # CVed now!
                                           'max_features': 0.3},
              'diurnal_temperature_range':{'n_estimators': 500, 
                                           'min_samples_leaf': 10, 
-                                          'max_samples': 0.1,
-                                          'max_features': 0.3}}
+                                          'max_samples': 0.5, #0.1 esa
+                                          'max_features': 0.5}} #0.3 esa
 #rf_settings = {'n_estimators': 300,  # CV and consult table
 #               'min_samples_leaf': 2,
 #               'max_features': 0.5, 
