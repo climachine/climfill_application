@@ -54,7 +54,7 @@ ifire = False
 ipermafrost = False
 ilandcover = False
 ilstpre = False
-ilstpost = True
+ilstpost = False
 ilstpostinit = False
 idtr = False
 idtrinit = False
@@ -66,7 +66,7 @@ ism = False
 isminit = False
 itws = False
 iprecip = False
-iobs = False
+iobs = True
 iobsinit = False
 inetrad = False
 
@@ -456,7 +456,7 @@ if iobs:
     filepath = landclimstoragepath + \
     'CRUTS/v4.06/0.5deg_lat-lon_1m/original/'
     maskpath = landclimstoragepath + \
-    'CRUTS_stations/v3.22/0.5deg_lat-lon_1m/original/'
+    'CRUTS_stations/v3.26/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*tmp*.nc')['tmp']
     mask = xr.open_mfdataset(f'{maskpath}*tmp.st0.nc')['st0']
 
@@ -487,12 +487,12 @@ if iobs:
 
     # precip
     filepath = landclimstoragepath + \
-    'CRUTS/v4.02/0.5deg_lat-lon_1m/original/'
+    'CRUTS/v4.06/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*pre*.nc')['pre']
     mask = xr.open_mfdataset(f'{maskpath}*pre.st0.nc')['st0']
 
-    data = data.resample(time='MS').mean() # M-mid to MS
-    mask = mask.resample(time='MS').mean() # M-mid to MS
+    data = data.resample(time='MS').mean().load() # M-mid to MS
+    mask = mask.resample(time='MS').mean().load() # M-mid to MS
 
     # sel timeperiod
     #data = data.sel(time=slice('1995','2013')) #DEBUG
