@@ -41,6 +41,13 @@ orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
 intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
 fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
+# normalise values for RMSE plotting
+datamean = orig.mean()
+datastd = orig.std()
+orig = (orig - datamean) / datastd
+intp = (intp - datamean) / datastd
+fill = (fill - datamean) / datastd
+
 # select verification year
 mask_orig = mask_orig.sel(time=verification_year).load()
 mask_cv = mask_cv.sel(time=verification_year).load()
@@ -60,15 +67,30 @@ fill = fill.where(mask_cv)
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','temperature_obs','precipitation_obs',
             'burned_area','diurnal_temperature_range','snow_cover_fraction'] 
+varnames_plot = ['surface layer \nsoil moisture','surface temperature',
+                 'precipitation (sat)','terrestrial water storage','2m temperature',
+                 'precipitation (ground)', 'burned area',
+                 'diurnal temperature range sfc','snow cover fraction'] 
 orig = orig.to_array().reindex(variable=varnames)
 intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
 
 # calc metrics
-corr_intp = xr.corr(orig, intp, dim=('lat','lon','time'))
-corr_fill = xr.corr(orig, fill, dim=('lat','lon','time'))
-rmse_intp = calc_rmse(orig, intp, dim=('lat','lon','time'))
-rmse_fill = calc_rmse(orig, fill, dim=('lat','lon','time'))
+#corr_intp = xr.corr(orig, intp, dim=('lat','lon','time'))
+#corr_fill = xr.corr(orig, fill, dim=('lat','lon','time'))
+#rmse_intp = calc_rmse(orig, intp, dim=('lat','lon','time'))
+#rmse_fill = calc_rmse(orig, fill, dim=('lat','lon','time'))
+corr_intp = xr.corr(orig, intp, dim=('time')).median(dim=('lat','lon'))
+corr_fill = xr.corr(orig, fill, dim=('time')).median(dim=('lat','lon'))
+rmse_intp = calc_rmse(orig, intp, dim=('time')).median(dim=('lat','lon'))
+rmse_fill = calc_rmse(orig, fill, dim=('time')).median(dim=('lat','lon'))
+
+corr_intp_err = xr.corr(orig, intp, dim=('time')).std(dim=('lat','lon'))
+corr_fill_err = xr.corr(orig, fill, dim=('time')).std(dim=('lat','lon'))
+rmse_intp_err = calc_rmse(orig, intp, dim=('time')).std(dim=('lat','lon'))
+rmse_fill_err = calc_rmse(orig, fill, dim=('time')).std(dim=('lat','lon'))
+
+# calc mean, stderr
 
 # plot
 fig = plt.figure(figsize=(10,10))
@@ -77,16 +99,17 @@ ax2 = fig.add_subplot(212)
 x_pos =np.arange(0,2*len(corr_intp),2)
 wd = 0.3
 
-ax1.bar(x_pos, corr_intp, width=wd, label='intp')
-ax1.bar(x_pos+wd, corr_fill, width=wd, label='fill')
+ax1.bar(x_pos, corr_intp, width=wd, yerr=corr_intp_err, label='Interpolation')
+ax1.bar(x_pos+wd, corr_fill, width=wd, yerr=corr_fill_err, label='CLIMFILL')
 
-ax2.bar(x_pos, rmse_intp, width=wd)
-ax2.bar(x_pos+wd, rmse_fill, width=wd)
+ax2.bar(x_pos, rmse_intp, yerr=rmse_intp_err, width=wd)
+ax2.bar(x_pos+wd, rmse_fill, yerr=rmse_fill_err, width=wd)
 
 ax1.set_xticks([])
 ax1.legend()
-ax2.set_xticks(x_pos+0.5*wd, varnames, rotation=90)
-ax2.set_ylim([0,45]) #TODO debug remove
+ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax1.set_ylim([0,1]) 
+ax2.set_ylim([0,2]) 
 ax1.set_xlim([-1,18])
 ax2.set_xlim([-1,18])
 
@@ -94,4 +117,5 @@ ax1.set_title('pearson correlation of verification pts')
 ax2.set_title('RSME of verification pts')
 
 plt.subplots_adjust(bottom=0.3)
-plt.show()
+#plt.show()
+plt.savefig('verification.png')

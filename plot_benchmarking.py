@@ -43,25 +43,22 @@ era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
 intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
 fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
-# select verification year
-#mask_orig = mask_orig.sel(time=verification_year).load()
-#mask_cv = mask_cv.sel(time=verification_year).load()
-#orig = orig.sel(time=verification_year).load()
-#intp = intp.sel(time=verification_year).load()
-#fill = fill.sel(time=verification_year).load()
-
-# calculate mask of verification points
-#mask_cv = np.logical_and(np.logical_not(mask_orig), mask_cv)
-
-# mask everything except verification points
-#orig = orig.where(mask_cv)
-#intp = intp.where(mask_cv)
-#fill = fill.where(mask_cv)
+# normalise values for RMSE plotting
+datamean = orig.mean()
+datastd = orig.std()
+orig = (orig - datamean) / datastd
+intp = (intp - datamean) / datastd
+fill = (fill - datamean) / datastd
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','snow_cover_fraction',
-            'temperature_obs','precipitation_obs','burned_area'] #hardcoded for now
+            'terrestrial_water_storage','temperature_obs',
+            'precipitation_obs','burned_area','diurnal_temperature_range',
+            'snow_cover_fraction'] #hardcoded for now
+varnames_plot = ['surface layer \nsoil moisture','surface temperature',
+                 'precipitation (sat)','terrestrial water storage','2m temperature',
+                 'precipitation (ground)', 'burned area',
+                 'diurnal temperature range sfc','snow cover fraction'] 
 orig = orig.to_array().reindex(variable=varnames)
 era5 = era5.to_array().reindex(variable=varnames)
 intp = intp.to_array().reindex(variable=varnames)
@@ -86,7 +83,14 @@ rmse_orig = calc_rmse(orig, era5, dim=('time'))
 rmse_intp = calc_rmse(intp, era5, dim=('time'))
 rmse_fill = calc_rmse(fill, era5, dim=('time'))
 
-# mean over regions
+# mean and std over regions
+corr_orig_err = corr_orig.std(dim=('mask'))
+corr_intp_err = corr_intp.std(dim=('mask'))
+corr_fill_err = corr_fill.std(dim=('mask'))
+rmse_orig_err = rmse_orig.std(dim=('mask'))
+rmse_intp_err = rmse_intp.std(dim=('mask'))
+rmse_fill_err = rmse_fill.std(dim=('mask'))
+
 corr_orig = corr_orig.mean(dim='mask')
 corr_intp = corr_intp.mean(dim='mask')
 corr_fill = corr_fill.mean(dim='mask')
@@ -101,13 +105,13 @@ ax2 = fig.add_subplot(212)
 x_pos =np.arange(0,2*len(corr_orig),2)
 wd = 0.3
 
-ax1.bar(x_pos-wd, corr_orig, width=wd, label='orig')
-ax1.bar(x_pos, corr_intp, width=wd, label='intp')
-ax1.bar(x_pos+wd, corr_fill, width=wd, label='fill')
+ax1.bar(x_pos-wd, corr_orig, yerr=corr_orig_err, width=wd, label='orig')
+ax1.bar(x_pos, corr_intp, yerr=corr_intp_err, width=wd, label='intp')
+ax1.bar(x_pos+wd, corr_fill, yerr=corr_fill_err, width=wd, label='fill')
 
-ax2.bar(x_pos-wd, rmse_orig, width=wd)
-ax2.bar(x_pos, rmse_intp, width=wd)
-ax2.bar(x_pos+wd, rmse_fill, width=wd)
+ax2.bar(x_pos-wd, rmse_orig, yerr=rmse_orig_err, width=wd)
+ax2.bar(x_pos, rmse_intp, yerr=rmse_intp_err, width=wd)
+ax2.bar(x_pos+wd, rmse_fill, yerr=rmse_fill_err, width=wd)
 
 ax1.set_xticks([])
 ax1.legend()
