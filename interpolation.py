@@ -48,8 +48,11 @@ rbf_kwargs = {'burned_area':              {'neighbors': 200, # CVed now!
               'landcover':                {'neighbors': 100, 
                                            'smoothing': 0.1, 
                                            'degree': 1},
-              'surface_temperature':      {'neighbors': 200, 
-                                           'smoothing': 1000, 
+              #'surface_temperature':      {'neighbors': 200,  # esa
+              #                             'smoothing': 1000, 
+              #                             'degree': 1},
+              'surface_temperature':      {'neighbors': 200, # modis
+                                           'smoothing': 100, 
                                            'degree': 1},
               'temperature_obs':          {'neighbors': 200, 
                                            'smoothing': 0.1, 
@@ -57,7 +60,10 @@ rbf_kwargs = {'burned_area':              {'neighbors': 200, # CVed now!
               'terrestrial_water_storage':{'neighbors': 200, 
                                            'smoothing': 1, 
                                            'degree': 1},
-              'diurnal_temperature_range':{'neighbors': 100, 
+              #'diurnal_temperature_range':{'neighbors': 100,  #esa
+              #                             'smoothing': 1000, 
+              #                             'degree': 1}}
+              'diurnal_temperature_range':{'neighbors': 200, #modis
                                            'smoothing': 1000, 
                                            'degree': 1}}
 data_monthly = gapfill_thin_plate_spline(data_monthly.copy(deep=True), landmask, rbf_kwargs)
