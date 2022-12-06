@@ -108,7 +108,6 @@ for params in params_combinations:
     # calc rmse
     rmse = calc_rmse(tmp, orig, dim='datapoints')
     print(f'{datetime.now()} rmse: {rmse.sel(variable="surface_temperature").item()} ...')
-    import IPython; IPython.embed()
     res.append([*params, *rmse.values])
 
 import IPython; IPython.embed()
