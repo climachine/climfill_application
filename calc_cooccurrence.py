@@ -9,8 +9,9 @@ import xarray as xr
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','temperature_obs','precipitation_obs',
-            'burned_area','diurnal_temperature_range','snow_cover_fraction'] 
+            'terrestrial_water_storage','snow_cover_fraction',
+            'temperature_obs','precipitation_obs', 
+            'diurnal_temperature_range','burned_area'] 
 
 # read data
 mask = xr.open_dataset(f'{esapath}mask_orig.nc') 
