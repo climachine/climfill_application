@@ -59,6 +59,10 @@ fill = fill.sel(time=verification_year).load()
 mask_cv = np.logical_and(np.logical_not(mask_orig), mask_cv)
 
 # mask everything except verification points
+# problem: RMSE is same if masked or not
+# corr is (-1,1) if less than 3 values; almost never more than 2 values, since
+# 3 months missing in a year is unlikely in minicube deletion
+# solution for now: not remove orig values, but arti. high corr produced
 orig = orig.where(mask_cv)
 intp = intp.where(mask_cv)
 fill = fill.where(mask_cv)
@@ -76,39 +80,71 @@ intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
 
 # calc metrics
+corr_intp = xr.corr(orig, intp, dim=('time'))
+corr_fill = xr.corr(orig, fill, dim=('time'))
+rmse_intp = calc_rmse(orig, intp, dim=('time'))
+rmse_fill = calc_rmse(orig, fill, dim=('time'))
+
 #corr_intp = xr.corr(orig, intp, dim=('lat','lon','time'))
 #corr_fill = xr.corr(orig, fill, dim=('lat','lon','time'))
 #rmse_intp = calc_rmse(orig, intp, dim=('lat','lon','time'))
 #rmse_fill = calc_rmse(orig, fill, dim=('lat','lon','time'))
-corr_intp = xr.corr(orig, intp, dim=('time')).median(dim=('lat','lon'))
-corr_fill = xr.corr(orig, fill, dim=('time')).median(dim=('lat','lon'))
-rmse_intp = calc_rmse(orig, intp, dim=('time')).median(dim=('lat','lon'))
-rmse_fill = calc_rmse(orig, fill, dim=('time')).median(dim=('lat','lon'))
+#corr_intp = xr.corr(orig, intp, dim=('time')).median(dim=('lat','lon'))
+#corr_fill = xr.corr(orig, fill, dim=('time')).median(dim=('lat','lon'))
+#rmse_intp = calc_rmse(orig, intp, dim=('time')).median(dim=('lat','lon'))
+#rmse_fill = calc_rmse(orig, fill, dim=('time')).median(dim=('lat','lon'))
+#
+#corr_intp_err = xr.corr(orig, intp, dim=('time')).std(dim=('lat','lon'))
+#corr_fill_err = xr.corr(orig, fill, dim=('time')).std(dim=('lat','lon'))
+#rmse_intp_err = calc_rmse(orig, intp, dim=('time')).std(dim=('lat','lon'))
+#rmse_fill_err = calc_rmse(orig, fill, dim=('time')).std(dim=('lat','lon'))
 
-corr_intp_err = xr.corr(orig, intp, dim=('time')).std(dim=('lat','lon'))
-corr_fill_err = xr.corr(orig, fill, dim=('time')).std(dim=('lat','lon'))
-rmse_intp_err = calc_rmse(orig, intp, dim=('time')).std(dim=('lat','lon'))
-rmse_fill_err = calc_rmse(orig, fill, dim=('time')).std(dim=('lat','lon'))
+# TODO: for now: remove from corr all timepoints with less than 3 missing vals
+corrmask = (mask_cv.sum(dim='time') > 3).to_array().reindex(variable=varnames)
+corr_intp = corr_intp.where(corrmask)
+corr_fill = corr_fill.where(corrmask)
 
-# calc mean, stderr
+# aggregate lat lon for boxplot
+corr_intp = corr_intp.stack(landpoints=('lat','lon'))
+corr_fill = corr_fill.stack(landpoints=('lat','lon'))
+rmse_intp = rmse_intp.stack(landpoints=('lat','lon'))
+rmse_fill = rmse_fill.stack(landpoints=('lat','lon'))
+
+# remove nan for boxplot
+def filter_data(data):
+    mask = ~np.isnan(data)
+    filtered_data = [d[m] for d, m in zip(data.values, mask.values)]
+    return filtered_data
+corr_intp = filter_data(corr_intp)
+corr_fill = filter_data(corr_fill)
+rmse_intp = filter_data(rmse_intp)
+rmse_fill = filter_data(rmse_fill)
 
 # plot
 fig = plt.figure(figsize=(10,10))
 ax1 = fig.add_subplot(211)
 ax2 = fig.add_subplot(212)
 x_pos =np.arange(0,2*len(corr_intp),2)
-wd = 0.3
+wd = 0.5
 
-ax1.bar(x_pos, corr_intp, width=wd, yerr=corr_intp_err, label='Interpolation')
-ax1.bar(x_pos+wd, corr_fill, width=wd, yerr=corr_fill_err, label='CLIMFILL')
+boxplot_kwargs = {'notch': False,
+                  'patch_artist': True}
 
-ax2.bar(x_pos, rmse_intp, yerr=rmse_intp_err, width=wd)
-ax2.bar(x_pos+wd, rmse_fill, yerr=rmse_fill_err, width=wd)
+b1 = ax1.boxplot(positions=x_pos, x=corr_intp, showfliers=False, **boxplot_kwargs)
+b2 = ax1.boxplot(positions=x_pos+wd, x=corr_fill, showfliers=False, **boxplot_kwargs)
+
+b3 = ax2.boxplot(positions=x_pos, x=rmse_intp, showfliers=False, **boxplot_kwargs)
+b4 = ax2.boxplot(positions=x_pos+wd, x=rmse_fill, showfliers=False, **boxplot_kwargs)
+
+for box in b1['boxes'] + b3['boxes']:
+    box.set_facecolor('blue')
+for box in b2['boxes'] + b4['boxes']:
+    box.set_facecolor('orange')
 
 ax1.set_xticks([])
 ax1.legend()
 ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
-ax1.set_ylim([0,1]) 
+ax1.set_ylim([0,1.1]) 
 ax2.set_ylim([0,2]) 
 ax1.set_xlim([-1,18])
 ax2.set_xlim([-1,18])
@@ -119,3 +155,31 @@ ax2.set_title('RSME of verification pts')
 plt.subplots_adjust(bottom=0.3)
 #plt.show()
 plt.savefig('verification.png')
+
+# plot
+#fig = plt.figure(figsize=(10,10))
+#ax1 = fig.add_subplot(211)
+#ax2 = fig.add_subplot(212)
+#x_pos =np.arange(0,2*len(corr_intp),2)
+#wd = 0.3
+#
+#ax1.bar(x_pos, corr_intp, width=wd, yerr=corr_intp_err, label='Interpolation')
+#ax1.bar(x_pos+wd, corr_fill, width=wd, yerr=corr_fill_err, label='CLIMFILL')
+#
+#ax2.bar(x_pos, rmse_intp, yerr=rmse_intp_err, width=wd)
+#ax2.bar(x_pos+wd, rmse_fill, yerr=rmse_fill_err, width=wd)
+#
+#ax1.set_xticks([])
+#ax1.legend()
+#ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+#ax1.set_ylim([0,1.2]) 
+#ax2.set_ylim([0,2]) 
+#ax1.set_xlim([-1,18])
+#ax2.set_xlim([-1,18])
+#
+#ax1.set_title('pearson correlation of verification pts')
+#ax2.set_title('RSME of verification pts')
+#
+#plt.subplots_adjust(bottom=0.3)
+##plt.show()
+#plt.savefig('verification.png')
