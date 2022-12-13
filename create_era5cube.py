@@ -10,6 +10,7 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 era5landpath = '/net/exo/landclim/data/dataset/ERA5-Land/recent/0.25deg_lat-lon_1m/processed/regrid/'
 era5landpathsum = '/net/exo/landclim/data/dataset/ERA5-Land/recent/0.25deg_lat-lon_1m/processed/regrid_tsum1m/'
 era5pathconstant = '/net/exo/landclim/data/dataset/ERA5_deterministic/recent/0.25deg_lat-lon_time-invariant/processed/regrid/'
+era5landpathdtr = '/net/exo/landclim/data/dataset/ERA5-Land/recent/0.25deg_lat-lon_1h/processed/'
 
 # common temporal extent and spatial resolution 
 timeslice = slice('1995','2020')
@@ -28,6 +29,8 @@ scf = xr.open_mfdataset(f'{era5landpath}era5-land_recent.snowc.*.nc')
 t2m = xr.open_mfdataset(f'{era5landpath}era5-land_recent.t2m.*.nc')
 cl = xr.open_dataset(f'{era5pathconstant}era5_deterministic_recent.cl.025deg.time-invariant.nc')
 dl = xr.open_dataset(f'{era5pathconstant}era5_deterministic_recent.dl.025deg.time-invariant.nc')
+tmin = xr.open_mfdataset(f'{era5landpathdtr}regrid_tmin1d/era*skt*.nc').drop('time_bnds')
+tmax = xr.open_mfdataset(f'{era5landpathdtr}regrid_tmax1d/era*skt*.nc').drop('time_bnds')
 
 # calculate tws 
 # convert ERA unit [m**3/m**3] to GRACE unit [water equivalent thickness, cm]
@@ -52,9 +55,15 @@ tp = tp * 1000 # m to mm
 t2m = t2m - 273.15
 skt = skt - 273.15
 
+# calculate DTR
+dtr = tmax - tmin
+dtr = dtr.resample(time='MS').mean()
+dtr = dtr.rename(skt='diurnal_temperature_range')
+
 # merge to one dat
 data = xr.concat([swvl1.to_array(),skt.to_array(),tp.to_array(),
-                  tws.to_array(),scf.to_array(),t2m.to_array()], dim='variable')
+                  tws.to_array(),scf.to_array(),t2m.to_array(),
+                  dtr.to_array()], dim='variable')
 
 # sel timeslice
 data = data.sel(time=timeslice)
