@@ -47,17 +47,18 @@ fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 datamean = orig.mean()
 datastd = orig.std()
 orig = (orig - datamean) / datastd
+era5 = (era5 - datamean) / datastd
 intp = (intp - datamean) / datastd
 fill = (fill - datamean) / datastd
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','temperature_obs',
-            'precipitation_obs','burned_area','diurnal_temperature_range',
+            'temperature_obs',
+            'precipitation_obs','diurnal_temperature_range',
             'snow_cover_fraction'] #hardcoded for now
 varnames_plot = ['surface layer \nsoil moisture','surface temperature',
-                 'precipitation (sat)','terrestrial water storage','2m temperature',
-                 'precipitation (ground)', 'burned area',
+                 'precipitation (sat)','2m temperature',
+                 'precipitation (ground)',
                  'diurnal temperature range sfc','snow cover fraction'] 
 orig = orig.to_array().reindex(variable=varnames)
 era5 = era5.to_array().reindex(variable=varnames)
@@ -116,12 +117,13 @@ ax2.bar(x_pos+wd, rmse_fill, yerr=rmse_fill_err, width=wd)
 ax1.set_xticks([])
 ax1.legend()
 ax2.set_xticks(x_pos+0.5*wd, varnames, rotation=90)
-ax2.set_ylim([0,15]) #TODO debug remove
-ax1.set_xlim([-1,16])
-ax2.set_xlim([-1,16])
+ax1.set_ylim([0,1]) 
+ax2.set_ylim([0,1.5]) 
+ax1.set_xlim([-1,14])
+ax2.set_xlim([-1,14])
 
 ax1.set_title('pearson correlation')
-ax2.set_title('RSME')
+ax2.set_title('RSME (normalised)')
 
 plt.subplots_adjust(bottom=0.3)
-plt.show()
+plt.savefig('benchmarking.png')
