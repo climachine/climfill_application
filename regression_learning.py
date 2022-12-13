@@ -17,7 +17,7 @@ testcase = args.testcase
 c = args.cluster
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
-esapath = '/cluster/work/climate/bverena/climfill_esa_cci/' # euler
+#esapath = '/cluster/work/climate/bverena/climfill_esa_cci/' # euler
 
 varnames = ['soil_moisture','surface_temperature','precipitation', 
             'terrestrial_water_storage','snow_cover_fraction',
@@ -84,7 +84,7 @@ rf_kwargs = {'burned_area':              {'n_estimators': 300, # CVed now!
 for varname in varnames:
     rf_kwargs[varname]['bootstrap'] = True
     rf_kwargs[varname]['warm_start'] = False
-    rf_kwargs[varname]['n_jobs'] = 10
+    rf_kwargs[varname]['n_jobs'] = 30
 regr_dict = {varname: RandomForestRegressor(**rf_kwargs[varname]) for varname in varnames}
 verbose = 1
 maxiter = 20
