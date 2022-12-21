@@ -82,31 +82,32 @@ ax15 = fig.add_subplot(8,2,15, projection=proj)
 ax16 = fig.add_subplot(8,2,16, projection=proj)
 
 cbar_kwargs = {'label': ''}
-plt_kwargs = {'vmin': 0, 'vmax': 1, 'transform': transf, 'levels': levels}
+plt_kwargs = {'vmin': 0, 'vmax': 1, 'transform': transf, 'levels': levels,
+              'add_colorbar': False}
 
-orig.burned_area.plot(ax=ax1, cmap='coolwarm', **plt_kwargs, add_colorbar=False)
-fill.burned_area.plot(ax=ax2, cmap='coolwarm', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.burned_area.plot(ax=ax1, cmap='coolwarm', **plt_kwargs)
+fill.burned_area.plot(ax=ax2, cmap='coolwarm', **plt_kwargs)
 
-orig.temperature_obs.plot(ax=ax3, cmap='coolwarm', **plt_kwargs, add_colorbar=False)
-fill.temperature_obs.plot(ax=ax4, cmap='coolwarm', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.temperature_obs.plot(ax=ax3, cmap='coolwarm', **plt_kwargs)
+fill.temperature_obs.plot(ax=ax4, cmap='coolwarm', **plt_kwargs)
 
-orig.surface_temperature.plot(ax=ax5, cmap='coolwarm', **plt_kwargs, add_colorbar=False)
-fill.surface_temperature.plot(ax=ax6, cmap='coolwarm', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.surface_temperature.plot(ax=ax5, cmap='coolwarm', **plt_kwargs)
+fill.surface_temperature.plot(ax=ax6, cmap='coolwarm', **plt_kwargs)
 
-orig.diurnal_temperature_range.plot(ax=ax7, cmap='coolwarm', **plt_kwargs, add_colorbar=False)
-fill.diurnal_temperature_range.plot(ax=ax8, cmap='coolwarm', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.diurnal_temperature_range.plot(ax=ax7, cmap='coolwarm', **plt_kwargs)
+fill.diurnal_temperature_range.plot(ax=ax8, cmap='coolwarm', **plt_kwargs)
 
-orig.precipitation_obs.plot(ax=ax9, cmap='coolwarm_r', **plt_kwargs, add_colorbar=False)
-fill.precipitation_obs.plot(ax=ax10, cmap='coolwarm_r', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.precipitation_obs.plot(ax=ax9, cmap='coolwarm_r', **plt_kwargs)
+fill.precipitation_obs.plot(ax=ax10, cmap='coolwarm_r', **plt_kwargs)
 
-orig.precipitation.plot(ax=ax11, cmap='coolwarm_r', **plt_kwargs, add_colorbar=False)
-fill.precipitation.plot(ax=ax12, cmap='coolwarm_r', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.precipitation.plot(ax=ax11, cmap='coolwarm_r', **plt_kwargs)
+fill.precipitation.plot(ax=ax12, cmap='coolwarm_r', **plt_kwargs)
 
-orig.soil_moisture.plot(ax=ax13, cmap='coolwarm_r', **plt_kwargs, add_colorbar=False)
-fill.soil_moisture.plot(ax=ax14, cmap='coolwarm_r', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.soil_moisture.plot(ax=ax13, cmap='coolwarm_r', **plt_kwargs)
+fill.soil_moisture.plot(ax=ax14, cmap='coolwarm_r', **plt_kwargs)
 
-orig.terrestrial_water_storage.plot(ax=ax15, cmap='coolwarm_r', **plt_kwargs, add_colorbar=False)
-fill.terrestrial_water_storage.plot(ax=ax16, cmap='coolwarm_r', **plt_kwargs, cbar_kwargs=cbar_kwargs)
+orig.terrestrial_water_storage.plot(ax=ax15, cmap='coolwarm_r', **plt_kwargs)
+fill.terrestrial_water_storage.plot(ax=ax16, cmap='coolwarm_r', **plt_kwargs)
 
 for ax in (ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10,ax11,ax12,ax13,ax14,ax15,ax16):
     ax.coastlines()
@@ -115,4 +116,5 @@ for ax in (ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10,ax11,ax12,ax13,ax14,ax15,ax1
 for varname, ax in zip(varnames_plot, (ax1,ax3,ax5,ax7,ax9,ax11,ax13,ax15)):
     ax.text(-0.9, 0.5,varname,transform=ax.transAxes, va='center')
 
+fig.suptitle('Aug 2020 California: Fire, Heat and Water Percentiles')
 plt.savefig('extrememaps.png')
