@@ -14,16 +14,30 @@ args = parser.parse_args()
 testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
+location = 'Europe'
 
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
 
-# select California 
-maxlat = 42
-minlat = 32
-maxlon = -115
-minlon = -125
+# select location 
+if location == 'California':
+    maxlat = 42
+    minlat = 32
+    maxlon = -115
+    minlon = -125
+elif location == 'Australia':
+    maxlat = -28
+    minlat = -35
+    maxlon = 154
+    minlon = 140
+elif location == 'Europe':
+    maxlat = 45
+    minlat = 35
+    maxlon = 27
+    minlon = -10
+else:
+    raise AttributeError('location not defined')
 
 orig = orig.sel(lat=slice(minlat,maxlat), lon=slice(minlon,maxlon))
 fill = fill.sel(lat=slice(minlat,maxlat), lon=slice(minlon,maxlon)) 
@@ -51,13 +65,25 @@ quantiles = fill.groupby('time.month').quantile(np.arange(0.1,1,0.1)).mean(dim=(
 #fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # select 2020
-timemin = '2020-03-01'
-timemax = '2020-11-01'
+if location == 'California':
+    timemin = '2020-03-01'
+    timemax = '2020-11-01'
+    months = [3,4,5,6,7,8,9,10,11]
+elif location == 'Australia':
+    timemin = '2019-08-01'
+    timemax = '2020-03-01'
+    months = [8,9,10,11,12,1,2,3]
+elif location == 'Europe':
+    timemin = '2017-05-01'
+    timemax = '2017-12-01'
+    months = [5,6,7,8,9,10,11,12]
+else:
+    raise AttributeError('location not defined')
 
 orig = orig.sel(time=slice(timemin,timemax))
 fill = fill.sel(time=slice(timemin,timemax))
 era5 = era5.sel(time=slice(timemin,timemax))
-quantiles = quantiles.sel(month=slice(3,11))
+quantiles = quantiles.sel(month=months)
 
 # compute regional averages
 orig = orig.mean(dim=('lat','lon'))
@@ -147,4 +173,4 @@ for varname, ax in zip(varnames_plot, (ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8)):
     ax.set_title(varname)
     ax.set_ylabel('')
 
-plt.savefig('extremeevent.png')
+plt.savefig(f'extremeevent_{location}.png')
