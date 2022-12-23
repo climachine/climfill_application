@@ -50,7 +50,8 @@ ds_out = xr.Dataset({'lat': (['lat'], np.arange(-89.75,90, 0.5)), # same as cdo_
 
 # flags for running scripts
 itopo = False
-ifire = False
+ifire = True
+ifireinit = True
 ipermafrost = False
 ilandcover = False
 ilstpre = False
@@ -66,7 +67,7 @@ ism = False
 isminit = False
 itws = False
 iprecip = False
-iobs = True
+iobs = False
 iobsinit = False
 inetrad = False
 
@@ -84,6 +85,27 @@ if ifire:
     filepath = landclimstoragepath + \
                'ESA-CCI-Fire_AVHRR-LTDR/v1.1/0.25deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*.nc')['burned_area']
+    mask = xr.open_mfdataset(f'{filepath}*.nc')['fraction_of_observed_area']
+
+    data = data.sel(time=timeslice)
+    mask = mask.sel(time=timeslice)
+
+    assert np.isnan(data).sum().values.item() == 0 # no missing values
+
+    mask = mask <= 50 # where less than 15 nans
+    data = data.where(mask) # keep where less than 15 nans
+
+    regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
+    data = regridder(data)
+
+    data = data.to_dataset(name='burned_area')
+    data.to_netcdf(f'{esapath}burned_area.nc')
+
+if ifireinit:
+    filepath = landclimstoragepath + \
+               'ESA-CCI-Fire_AVHRR-LTDR/v1.1/0.25deg_lat-lon_1m/original/'
+    data = xr.open_mfdataset(f'{filepath}*.nc')['burned_area']
+
     data = data.sel(time=timeslice)
 
     assert np.isnan(data).sum().values.item() == 0 # no missing values
@@ -92,7 +114,7 @@ if ifire:
     data = regridder(data)
 
     data = data.to_dataset(name='burned_area')
-    data.to_netcdf(f'{esapath}burned_area.nc')
+    data.to_netcdf(f'{esapath}burned_area_init.nc')
 
 # permafrost
 if ipermafrost:
