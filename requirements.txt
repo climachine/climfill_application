@@ -10,3 +10,4 @@ cartopy
 xesmf
 pandas
 IPython
+bottleneck
