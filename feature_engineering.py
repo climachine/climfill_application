@@ -14,15 +14,22 @@ from climfill.feature_engineering import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
+parser.add_argument('--file', '-f', dest='filename', type=str)
+parser.set_defaults(filename=None)
 args = parser.parse_args()
 testcase = args.testcase
+filename = args.filename
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
 # read data
 print(f'{datetime.now()} read data...')
-data = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').to_array().load()
-mask = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc').to_array().load() #needs to be crossval such taht verification points are updated
+if filename is None:
+    data = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').to_array().load()
+    mask = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc').to_array().load() #needs to be crossval such taht verification points are updated
+else:
+    data = xr.open_dataset(f'{esapath}{testcase}/verification/{filename}_interpolated.nc').to_array().load()
+    mask = xr.open_dataset(f'{esapath}{testcase}/verification/mask{filename[4:]}.nc').to_array().load()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # constant maps include:
@@ -94,6 +101,10 @@ mask = mask.stack(datapoints=('time', 'landpoints')).reset_index('datapoints').T
 # save
 print(f'{datetime.now()} save...')
 data = data.to_dataset('variable')
-data.to_netcdf(f'{esapath}{testcase}/datatable.nc')
 mask = mask.to_dataset('variable')
-mask.to_netcdf(f'{esapath}{testcase}/masktable.nc')
+if filename is None:
+    data.to_netcdf(f'{esapath}{testcase}/datatable.nc')
+    mask.to_netcdf(f'{esapath}{testcase}/masktable.nc')
+else:
+    data.to_netcdf(f'{esapath}{testcase}/verification/{filename}_table.nc')
+    mask.to_netcdf(f'{esapath}{testcase}/verification/mask{filename[4:]}_table.nc')

@@ -10,14 +10,20 @@ from climfill.interpolation import gapfill_thin_plate_spline, gapfill_kriging
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
+parser.add_argument('--file', '-f', dest='filename', type=str)
+parser.set_defaults(filename=None)
 args = parser.parse_args()
 testcase = args.testcase
+filename = args.filename
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
 # read data, NEW: without crossval holes
 print(f'{datetime.now()} read data...')
-data = xr.open_dataset(f'{esapath}{testcase}/data_crossval.nc')
+if filename is None:
+    data = xr.open_dataset(f'{esapath}{testcase}/data_initguess.nc')
+else:
+    data = xr.open_dataset(f'{esapath}{testcase}/verification/{filename}.nc')
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # xarray/dask issue https://github.com/pydata/xarray/issues/3813
@@ -152,4 +158,7 @@ assert np.isnan(data).sum().item() == 0
 # save
 print(f'{datetime.now()} save...')
 data = data.to_dataset('variable')
-data.to_netcdf(f'{esapath}{testcase}/data_interpolated.nc')
+if filename is None:
+    data.to_netcdf(f'{esapath}{testcase}/data_interpolated.nc')
+else:
+    data.to_netcdf(f'{esapath}{testcase}/verification/{filename}_interpolated.nc')

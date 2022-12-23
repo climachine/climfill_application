@@ -12,9 +12,12 @@ from climfill.regression_learning import Imputation
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
 parser.add_argument('--cluster', '-c', dest='cluster', type=int)
+parser.add_argument('--file', '-f', dest='filename', type=str)
+parser.set_defaults(filename=None)
 args = parser.parse_args()
 testcase = args.testcase
 c = args.cluster
+filename = args.filename
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 #esapath = '/cluster/work/climate/bverena/climfill_esa_cci/' # euler
@@ -24,13 +27,18 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'temperature_obs','precipitation_obs','burned_area',
             'diurnal_temperature_range'] #hardcoded for now
 
+if filename is None:
+    filepath = f'{esapath}{testcase}/clusters/'
+else:
+    filepath = f'{esapath}{testcase}/verification/clusters{filename[-1]}/'
+
 # read data
 # mask needs explicit bool otherwise lostmask is saved as int (0,1) and 
 # numpy selects all datapoints as missing in imputethis since 0 and 1 
 # are treated as true and no false are found
 print(f'{datetime.now()} read data...')
-data = xr.open_dataset(f'{esapath}{testcase}/clusters/datacluster_init_c{c:02d}.nc')['data']
-mask = xr.open_dataset(f'{esapath}{testcase}/clusters/maskcluster_init_c{c:02d}.nc')['data'].astype(bool)
+data = xr.open_dataset(f'{filepath}/datacluster_init_c{c:02d}.nc')['data']
+mask = xr.open_dataset(f'{filepath}/maskcluster_init_c{c:02d}.nc')['data'].astype(bool)
 
 # gapfilling
 print(f'{datetime.now()} gapfilling...')
@@ -99,4 +107,4 @@ data_gapfilled = data_gapfilled.sel(variable=varnames)
 # save
 print(f'{datetime.now()} save...')
 data_gapfilled = data_gapfilled.to_dataset('variable')
-data_gapfilled.to_netcdf(f'{esapath}{testcase}/clusters/datacluster_iter_c{c:02d}.nc')
+data_gapfilled.to_netcdf(f'{filepath}/datacluster_iter_c{c:02d}.nc')
