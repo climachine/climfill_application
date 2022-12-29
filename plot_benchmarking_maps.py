@@ -63,8 +63,12 @@ fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','temperature_obs','precipitation_obs',
-            'burned_area','diurnal_temperature_range','snow_cover_fraction'] 
+            'temperature_obs','precipitation_obs',
+            'diurnal_temperature_range','snow_cover_fraction'] 
+varnames_plot = ['surface layer \nsoil moisture','surface temperature',
+                 'precipitation (sat)','2m temperature',
+                 'precipitation (ground)',
+                 'diurnal temperature range sfc','snow cover fraction'] 
 orig = orig.to_array().reindex(variable=varnames)
 era5 = era5.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
@@ -82,7 +86,7 @@ fill = fill.groupby(regions).mean()
 # aggregate per region
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
-fig = plt.figure(figsize=(25,7))
+fig = plt.figure(figsize=(15,10))
 ax1 = fig.add_subplot(331, projection=proj)
 ax2 = fig.add_subplot(332, projection=proj)
 ax3 = fig.add_subplot(333, projection=proj)
@@ -93,9 +97,9 @@ ax7 = fig.add_subplot(337, projection=proj)
 ax8 = fig.add_subplot(338, projection=proj)
 ax9 = fig.add_subplot(339, projection=proj)
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]
-levels = np.arange(-1,1,0.25)
+levels = np.arange(-1,1.25,0.25)
 
-for varname, ax in zip(varnames, axes):
+for v, (varname, ax) in enumerate(zip(varnames, axes)):
     corrorig = xr.corr(orig.sel(variable=varname),era5.sel(variable=varname), dim='time')
     corrfill = xr.corr(fill.sel(variable=varname),era5.sel(variable=varname), dim='time')
 
@@ -103,9 +107,14 @@ for varname, ax in zip(varnames, axes):
     corrfill = expand_to_worldmap(corrfill,regions)
 
     landmask.plot(ax=ax, add_colorbar=False, cmap='Greys', transform=transf, vmin=-2, vmax=10)
-    corrfill.plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
+    im = corrfill.plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
                                levels=levels, add_colorbar=False)
     regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
                                                  ax=ax, add_label=False, projection=transf)
-    ax.set_title(varname)
-plt.show()
+    ax.set_title(varnames_plot[v])
+
+cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
+cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
+cbar.set_label('Pearson correlation')
+
+plt.savefig('benchmarking_maps.png')
