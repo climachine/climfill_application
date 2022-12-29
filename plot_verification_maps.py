@@ -21,17 +21,23 @@ verification_year = '2004'
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
 
-def aggregate_to_regions(data):
-    landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(data.lon, data.lat)
-    regions = regionmask.defined_regions.ar6.land.mask(data.lon, data.lat)
-    regions = regions.where(~np.isnan(landmask))
+#def aggregate_to_regions(data, regions):
+#    landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(data.lon, data.lat)
+#    regions = regionmask.defined_regions.ar6.land.mask(data.lon, data.lat)
+#    regions = regions.where(~np.isnan(landmask))
+#
+#    data = data.groupby(regions).mean()
+#
+#    test = xr.full_like(regions, np.nan)
+#    for region, r in zip(range(int(regions.max().item())), data):
+#        test = test.where(regions != region, r) # unit stations per bio square km
+#
+#    return test
 
-    data = data.groupby(regions).mean()
-
+def aggregate_to_regions(data, regions):
     test = xr.full_like(regions, np.nan)
     for region, r in zip(range(int(regions.max().item())), data):
         test = test.where(regions != region, r) # unit stations per bio square km
-
     return test
 
 # NOTE:
@@ -63,9 +69,10 @@ fill = fill.sel(time=verification_year).load()
 mask_cv = np.logical_and(np.logical_not(mask_orig), mask_cv)
 
 # mask everything except verification points
-orig = orig.where(mask_cv)
-intp = intp.where(mask_cv)
-fill = fill.where(mask_cv)
+# for now not; reason: see plot_verification.py
+#orig = orig.where(mask_cv)
+#intp = intp.where(mask_cv)
+#fill = fill.where(mask_cv)
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
@@ -79,7 +86,7 @@ orig = orig.to_array().reindex(variable=varnames)
 intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
 
-# aggregate per region
+# plot
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
 fig = plt.figure(figsize=(15,10))
@@ -94,19 +101,32 @@ ax8 = fig.add_subplot(338, projection=proj)
 ax9 = fig.add_subplot(339, projection=proj)
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]
 levels = np.arange(-1,1.25,0.25)
-landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(mask_cv.lon, mask_cv.lat)
+landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
+regions = regionmask.defined_regions.ar6.land.mask(orig.lon, orig.lat)
+regions = regions.where(~np.isnan(landmask))
 
 for v, (varname, ax) in enumerate(zip(varnames, axes)):
-    corrfill = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time')
-    corrintp = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time')
-    corrfill = aggregate_to_regions(corrfill)
-    corrintp = aggregate_to_regions(corrintp)
+    #corrfill = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time')
+    #corrintp = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time')
+    rmseintp = calc_rmse(orig.sel(variable=varname), intp.sel(variable=varname), dim=('time'))
+    rmsefill = calc_rmse(orig.sel(variable=varname), fill.sel(variable=varname), dim=('time'))
 
     # calculate skill score
-    #skillscore = 1 - (1-corrfill)/(1-corrintp)
+    skillscore = 1 - (rmsefill/rmseintp)
+
+    # mask regions with less than 10% verification points
+    count_landpoints = landmask.where(landmask!=0,1).groupby(regions).count()
+    count_verification = rmsefill.notnull().groupby(regions).sum()
+    valid_regions = count_verification/count_landpoints > 0.05
+
+    skillscore = skillscore.groupby(regions).mean()
+
+    skillscore = skillscore.where(valid_regions)
+
+    skillscore = aggregate_to_regions(skillscore, regions)
 
     landmask.plot(ax=ax, add_colorbar=False, cmap='Greys', transform=transf, vmin=-2, vmax=10)
-    im = corrfill.plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
+    im = skillscore.plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
                   levels=levels, add_colorbar=False)
     regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
                                              ax=ax, add_label=False, projection=transf)
@@ -114,6 +134,6 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
-cbar.set_label('Pearson correlation')
+cbar.set_label('RMSE Skill Score')
 
 plt.savefig('verification_maps.png')
