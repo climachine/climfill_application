@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation', #for order of plots
-            'terrestrial_water_storage','snow_cover_fraction',
-            'temperature_obs','precipitation_obs','diurnal_temperature_range']
+            'terrestrial_water_storage', 'temperature_obs','precipitation_obs',
+            'snow_cover_fraction', 'diurnal_temperature_range', 'burned_area']
 #varnames = ['soil_moisture','surface_temperature','temperature_obs',
 #            'diurnal_temperature_range','burned_area',
 #            'precipitation','precipitation_obs','snow_cover_fraction',
@@ -59,23 +59,25 @@ transf = ccrs.PlateCarree()
 cmap = plt.get_cmap('YlOrBr')
 cmap.set_under('aliceblue')
 
-fig = plt.figure(figsize=(17,10))
-ax1 = fig.add_subplot(4,4,1, projection=proj)
-ax2 = fig.add_subplot(4,4,2, projection=proj)
-ax3 = fig.add_subplot(4,4,3, projection=proj)
-ax4 = fig.add_subplot(4,4,4, projection=proj)
-ax5 = fig.add_subplot(4,4,5)
-ax6 = fig.add_subplot(4,4,6)
-ax7 = fig.add_subplot(4,4,7)
-ax8 = fig.add_subplot(4,4,8)
-ax9 = fig.add_subplot(4,4,9, projection=proj)
-ax10 = fig.add_subplot(4,4,10, projection=proj)
-ax11 = fig.add_subplot(4,4,11, projection=proj)
-ax12 = fig.add_subplot(4,4,12, projection=proj)
-ax13 = fig.add_subplot(4,4,13)
-ax14 = fig.add_subplot(4,4,14)
-ax15 = fig.add_subplot(4,4,15)
-ax16 = fig.add_subplot(4,4,16)
+fig = plt.figure(figsize=(15,15))
+ax1 = fig.add_subplot(6,3,1, projection=proj)
+ax2 = fig.add_subplot(6,3,2, projection=proj)
+ax3 = fig.add_subplot(6,3,3, projection=proj)
+ax4 = fig.add_subplot(6,3,4)
+ax5 = fig.add_subplot(6,3,5)
+ax6 = fig.add_subplot(6,3,6)
+ax7 = fig.add_subplot(6,3,7, projection=proj)
+ax8 = fig.add_subplot(6,3,8, projection=proj)
+ax9 = fig.add_subplot(6,3,9, projection=proj)
+ax10 = fig.add_subplot(6,3,10)
+ax11 = fig.add_subplot(6,3,11)
+ax12 = fig.add_subplot(6,3,12)
+ax13 = fig.add_subplot(6,3,13, projection=proj)
+ax14 = fig.add_subplot(6,3,14, projection=proj)
+ax15 = fig.add_subplot(6,3,15, projection=proj)
+ax16 = fig.add_subplot(6,3,16)
+ax17 = fig.add_subplot(6,3,17)
+ax18 = fig.add_subplot(6,3,18)
 
 im = maskmap.soil_moisture.plot(ax=ax1, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
@@ -83,58 +85,70 @@ maskmap.surface_temperature.plot(ax=ax2, cmap=cmap, vmin=0, vmax=1,
                            transform=transf, add_colorbar=False)
 maskmap.precipitation.plot(ax=ax3, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
-maskmap.terrestrial_water_storage.plot(ax=ax4, cmap=cmap, vmin=0, vmax=1, 
+
+maskmap.terrestrial_water_storage.plot(ax=ax7, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
-maskmap.snow_cover_fraction.plot(ax=ax9, cmap=cmap, vmin=0, vmax=1, 
+maskmap.temperature_obs.plot(ax=ax8, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
-maskmap.temperature_obs.plot(ax=ax10, cmap=cmap, vmin=0, vmax=1, 
-                           transform=transf, add_colorbar=False)
-maskmap.precipitation_obs.plot(ax=ax11, cmap=cmap, vmin=0, vmax=1, 
-                           transform=transf, add_colorbar=False)
-maskmap.diurnal_temperature_range.plot(ax=ax12, cmap=cmap, vmin=0, vmax=1, 
+maskmap.precipitation_obs.plot(ax=ax9, cmap=cmap, vmin=0, vmax=1, 
                            transform=transf, add_colorbar=False)
 
-masktimeline.soil_moisture.T.plot(ax=ax5, cmap=cmap, vmin=0, vmax=1, 
+maskmap.snow_cover_fraction.plot(ax=ax13, cmap=cmap, vmin=0, vmax=1, 
+                           transform=transf, add_colorbar=False)
+maskmap.diurnal_temperature_range.plot(ax=ax14, cmap=cmap, vmin=0, vmax=1, 
+                           transform=transf, add_colorbar=False)
+maskmap.burned_area.plot(ax=ax15, cmap=cmap, vmin=0, vmax=1, 
+                           transform=transf, add_colorbar=False)
+
+masktimeline.soil_moisture.T.plot(ax=ax4, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
-masktimeline.surface_temperature.T.plot(ax=ax6, cmap=cmap, vmin=0, vmax=1, 
+masktimeline.surface_temperature.T.plot(ax=ax5, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
-masktimeline.precipitation.T.plot(ax=ax7, cmap=cmap, vmin=0, vmax=1, 
+masktimeline.precipitation.T.plot(ax=ax6, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
-masktimeline.terrestrial_water_storage.T.plot(ax=ax8, cmap=cmap, vmin=0, 
+
+masktimeline.terrestrial_water_storage.T.plot(ax=ax10, cmap=cmap, vmin=0, 
                            vmax=1, add_colorbar=False)
-masktimeline.snow_cover_fraction.T.plot(ax=ax13, cmap=cmap, vmin=0, vmax=1, 
+masktimeline.temperature_obs.T.plot(ax=ax11, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
-masktimeline.temperature_obs.T.plot(ax=ax14, cmap=cmap, vmin=0, vmax=1, 
+masktimeline.precipitation_obs.T.plot(ax=ax12, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
-masktimeline.precipitation_obs.T.plot(ax=ax15, cmap=cmap, vmin=0, vmax=1, 
+
+masktimeline.snow_cover_fraction.T.plot(ax=ax16, cmap=cmap, vmin=0, vmax=1, 
                            add_colorbar=False)
-masktimeline.diurnal_temperature_range.T.plot(ax=ax16, cmap=cmap, vmin=0, 
+masktimeline.diurnal_temperature_range.T.plot(ax=ax17, cmap=cmap, vmin=0, 
+                           vmax=1, add_colorbar=False)
+masktimeline.burned_area.T.plot(ax=ax18, cmap=cmap, vmin=0, 
                            vmax=1, add_colorbar=False)
 
-for varname, ax in zip(varnames, (ax1,ax2,ax3,ax4,ax9,ax10,ax11,ax12)):
+for varname, ax in zip(varnames, (ax1,ax2,ax3,ax7,ax8,ax9,ax13,ax14,ax15)):
     frac = np.around(frac_mis[varname].item()*100, decimals=2)
     ax.set_title(f'{varname}: {frac}% missing')
 
-cbar_ax = fig.add_axes([0.95, 0.15, 0.02, 0.7]) # left bottom width height
+cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.7]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax)
 cbar.set_label('fraction of missing values')
 
+ax4.set_xlabel('')
 ax5.set_xlabel('')
 ax6.set_xlabel('')
-ax7.set_xlabel('')
-ax8.set_xlabel('')
+ax10.set_xlabel('')
+ax11.set_xlabel('')
+ax12.set_xlabel('')
 
-ax6.set_ylabel('')
-ax7.set_ylabel('')
-ax8.set_ylabel('')
-ax14.set_ylabel('')
-ax15.set_ylabel('')
-ax16.set_ylabel('')
-
+ax4.set_xticklabels([])
 ax5.set_xticklabels([])
 ax6.set_xticklabels([])
-ax7.set_xticklabels([])
-ax8.set_xticklabels([])
+ax10.set_xticklabels([])
+ax11.set_xticklabels([])
+ax12.set_xticklabels([])
+
+ax5.set_ylabel('')
+ax6.set_ylabel('')
+ax11.set_ylabel('')
+ax12.set_ylabel('')
+ax17.set_ylabel('')
+ax18.set_ylabel('')
 
 ax1.set_facecolor('lightgrey')
 ax2.set_facecolor('lightgrey')
@@ -152,5 +166,7 @@ ax13.set_facecolor('lightgrey')
 ax14.set_facecolor('lightgrey')
 ax15.set_facecolor('lightgrey')
 ax16.set_facecolor('lightgrey')
+ax17.set_facecolor('lightgrey')
+ax18.set_facecolor('lightgrey')
 #plt.show()
 plt.savefig('frac_missing.png', dpi=300)
