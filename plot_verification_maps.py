@@ -47,26 +47,26 @@ def aggregate_to_regions(data, regions):
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
-intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
-fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
+#intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
+#fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
+fill = xr.open_dataset(f'{esapath}{testcase}/verification/data_climfilled.nc')
+intp = xr.open_dataset(f'{esapath}{testcase}/verification/data_interpolated.nc')
 
 mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
-mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
 
 # (optional) calculate anomalies
-orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
-fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+#intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
+#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # select verification year
 mask_orig = mask_orig.sel(time=verification_year).load()
-mask_cv = mask_cv.sel(time=verification_year).load()
 orig = orig.sel(time=verification_year).load()
 intp = intp.sel(time=verification_year).load()
 fill = fill.sel(time=verification_year).load()
 
 # calculate mask of verification points
-mask_cv = np.logical_and(np.logical_not(mask_orig), mask_cv)
+mask_cv = np.logical_not(mask_orig)
 
 # mask everything except verification points
 # for now not; reason: see plot_verification.py
@@ -100,10 +100,11 @@ ax7 = fig.add_subplot(337, projection=proj)
 ax8 = fig.add_subplot(338, projection=proj)
 ax9 = fig.add_subplot(339, projection=proj)
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]
-levels = np.arange(-1,1.25,0.25)
+levels = np.arange(-1,1.1,0.1)
 landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
 regions = regionmask.defined_regions.ar6.land.mask(orig.lon, orig.lat)
 regions = regions.where(~np.isnan(landmask))
+obsmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 for v, (varname, ax) in enumerate(zip(varnames, axes)):
     #corrfill = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time')
@@ -115,13 +116,17 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
     skillscore = 1 - (rmsefill/rmseintp)
 
     # mask regions with less than 10% verification points
+    # mask regions with less than 10% points at all (greenland, deserts etc)
     count_landpoints = landmask.where(landmask!=0,1).groupby(regions).count()
+    count_obspoints = obsmask.groupby(regions).sum()
     count_verification = rmsefill.notnull().groupby(regions).sum()
     valid_regions = count_verification/count_landpoints > 0.05
+    included_regions = count_obspoints/count_landpoints > 0.10
 
     skillscore = skillscore.groupby(regions).mean()
 
     skillscore = skillscore.where(valid_regions)
+    skillscore = skillscore.where(included_regions)
 
     skillscore = aggregate_to_regions(skillscore, regions)
 
