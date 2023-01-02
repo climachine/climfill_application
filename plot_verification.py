@@ -29,9 +29,9 @@ varnames_plot = ['surface layer \nsoil moisture','surface temperature',
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
 
-def assemble_verification_cube(testcase, numbers=[0,1,2]):
+def assemble_verification_cube(testcase, numbers=[0,1,2,3,4,5,6,7,8], label='climfilled'):
     for n, no in enumerate(numbers):
-        fill = xr.open_dataset(f'{esapath}{testcase}/verification/dataveri{no}_climfilled.nc')
+        fill = xr.open_dataset(f'{esapath}{testcase}/verification/dataveri{no}_{label}.nc')
         mask_cv = xr.open_dataset(f'{esapath}{testcase}/verification/maskveri{no}.nc')
         mask = np.logical_and(np.logical_not(mask_orig), mask_cv)
         fill = fill.to_array().reindex(variable=varnames)
@@ -54,17 +54,18 @@ def assemble_verification_cube(testcase, numbers=[0,1,2]):
 
 
 # read data
-#fill = assemble_verification_cube(testcase)
 #fill = fill.to_dataset('variable')
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
-intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
+#intp = xr.open_dataset(f'{esapath}{testcase}/verification/dataveri2_interpolated.nc')
 #intp = xr.open_dataset(f'{esapath}test5/data_interpolated.nc') # DeEUG
 mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
 
-fill = xr.open_dataset(f'{esapath}{testcase}/verification/dataveri2_climfilled.nc')
+#fill = xr.open_dataset(f'{esapath}{testcase}/verification/dataverI2_climfilled.nc')
 mask_cv = xr.open_dataset(f'{esapath}{testcase}/verification/maskveri2.nc')
 #fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 #mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
+fill = assemble_verification_cube(testcase).to_dataset('variable')
+intp = assemble_verification_cube(testcase, label='interpolated').to_dataset('variable')
 
 mask = np.logical_and(np.logical_not(mask_orig), mask_cv)
 
@@ -170,6 +171,8 @@ for box in b1['boxes'] + b3['boxes']:
     box.set_facecolor(col_intp)
 for box in b2['boxes'] + b4['boxes']:
     box.set_facecolor(col_fill)
+for median in b1['medians']:
+    median.set_color(col_intp)
 
 ax1.set_xticks([])
 legend_elements = [Patch(facecolor=col_intp, edgecolor=col_intp, label='Interpolation'),
