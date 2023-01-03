@@ -16,7 +16,8 @@ args = parser.parse_args()
 testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
-verification_year = '2004'
+#verification_year = '2004'
+verification_year = slice('2004','2005')
 
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
@@ -55,9 +56,9 @@ intp = xr.open_dataset(f'{esapath}{testcase}/verification/data_interpolated.nc')
 mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
 
 # (optional) calculate anomalies
-#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-#intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
-#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
+fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
 # select verification year
 mask_orig = mask_orig.sel(time=verification_year).load()
@@ -105,8 +106,18 @@ landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lo
 regions = regionmask.defined_regions.ar6.land.mask(orig.lon, orig.lat)
 regions = regions.where(~np.isnan(landmask))
 obsmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
+cmap = plt.get_cmap('seismic_r')
+cmap.set_over('aliceblue')
+cmap.set_bad('lightgrey')
 
+#varnames = ['snow_cover_fraction'] #DEBUG
 for v, (varname, ax) in enumerate(zip(varnames, axes)):
+
+    # avoid very small skill scores by very small differences; scf they are -inf now
+    orig = np.round(orig, decimals=5)
+    intp = np.round(intp, decimals=5)
+    fill = np.round(fill, decimals=5)
+
     #corrfill = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time')
     #corrintp = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time')
     rmseintp = calc_rmse(orig.sel(variable=varname), intp.sel(variable=varname), dim=('time'))
@@ -117,24 +128,27 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
 
     # mask regions with less than 10% verification points
     # mask regions with less than 10% points at all (greenland, deserts etc)
-    count_landpoints = landmask.where(landmask!=0,1).groupby(regions).count()
-    count_obspoints = obsmask.groupby(regions).sum()
-    count_verification = rmsefill.notnull().groupby(regions).sum()
-    valid_regions = count_verification/count_landpoints > 0.05
-    included_regions = count_obspoints/count_landpoints > 0.10
+    #count_landpoints = landmask.where(landmask!=0,1).groupby(regions).count()
+    #count_obspoints = obsmask.groupby(regions).sum()
+    #count_verification = rmsefill.notnull().groupby(regions).sum()
+    #valid_regions = count_verification/count_landpoints > 0.05
+    #included_regions = count_obspoints/count_landpoints > 0.10
+    skillscore = skillscore.where(obsmask) # not obs dark grey
+    skillscore = skillscore.where(np.logical_not(landmask), 10) # ocean blue
 
-    skillscore = skillscore.groupby(regions).mean()
+    #import IPython; IPython.embed()
+    #skillscore = skillscore.groupby(regions).mean()
 
-    skillscore = skillscore.where(valid_regions)
-    skillscore = skillscore.where(included_regions)
+    #skillscore = skillscore.where(valid_regions)
+    #skillscore = skillscore.where(included_regions)
 
-    skillscore = aggregate_to_regions(skillscore, regions)
+    #skillscore = aggregate_to_regions(skillscore, regions)
 
-    landmask.plot(ax=ax, add_colorbar=False, cmap='Greys', transform=transf, vmin=-2, vmax=10)
-    im = skillscore.plot(ax=ax, cmap='coolwarm_r', vmin=-1, vmax=1, transform=transf, 
+    #landmask.plot(ax=ax, add_colorbar=False, cmap='Greys', transform=transf, vmin=-2, vmax=10)
+    im = skillscore.plot(ax=ax, cmap=cmap, vmin=-1, vmax=1, transform=transf, 
                   levels=levels, add_colorbar=False)
-    regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
-                                             ax=ax, add_label=False, projection=transf)
+    #regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
+    #                                         ax=ax, add_label=False, projection=transf)
     ax.set_title(varnames_plot[v])
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
