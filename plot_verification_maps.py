@@ -16,64 +16,37 @@ args = parser.parse_args()
 testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
-#verification_year = '2004'
 verification_year = slice('2004','2005')
 
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
 
-#def aggregate_to_regions(data, regions):
-#    landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(data.lon, data.lat)
-#    regions = regionmask.defined_regions.ar6.land.mask(data.lon, data.lat)
-#    regions = regions.where(~np.isnan(landmask))
-#
-#    data = data.groupby(regions).mean()
-#
-#    test = xr.full_like(regions, np.nan)
-#    for region, r in zip(range(int(regions.max().item())), data):
-#        test = test.where(regions != region, r) # unit stations per bio square km
-#
-#    return test
-
-def aggregate_to_regions(data, regions):
-    test = xr.full_like(regions, np.nan)
-    for region, r in zip(range(int(regions.max().item())), data):
-        test = test.where(regions != region, r) # unit stations per bio square km
-    return test
-
 # NOTE:
-# TWS does not have any originally missing values in 2004
 # JS not possible bec needs times where all 8 vars are observed (i.e. in the
 #      verification set) at the same time. ditched for now
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
-#intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc')
-#fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/verification/data_climfilled.nc')
 intp = xr.open_dataset(f'{esapath}{testcase}/verification/data_interpolated.nc')
 
-mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
-
 # (optional) calculate anomalies
-orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
-fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+#intp = intp.groupby('time.month') - intp.groupby('time.month').mean()
+#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+#
+## normalise values such that RMSEs (i.e. negative skill scores) are comparable
+## and rounding has same effect on every variable
+#datamean = orig.mean()
+#datastd = orig.std()
+#orig = (orig - datamean) / datastd
+#intp = (intp - datamean) / datastd
+#fill = (fill - datamean) / datastd
 
 # select verification year
-mask_orig = mask_orig.sel(time=verification_year).load()
 orig = orig.sel(time=verification_year).load()
 intp = intp.sel(time=verification_year).load()
 fill = fill.sel(time=verification_year).load()
-
-# calculate mask of verification points
-mask_cv = np.logical_not(mask_orig)
-
-# mask everything except verification points
-# for now not; reason: see plot_verification.py
-#orig = orig.where(mask_cv)
-#intp = intp.where(mask_cv)
-#fill = fill.where(mask_cv)
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
@@ -110,7 +83,7 @@ cmap = plt.get_cmap('seismic_r')
 cmap.set_over('aliceblue')
 cmap.set_bad('lightgrey')
 
-#varnames = ['snow_cover_fraction'] #DEBUG
+varnames = ['burned_area'] #DEBUG
 for v, (varname, ax) in enumerate(zip(varnames, axes)):
 
     # avoid very small skill scores by very small differences; scf they are -inf now
@@ -118,37 +91,21 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
     intp = np.round(intp, decimals=5)
     fill = np.round(fill, decimals=5)
 
-    #corrfill = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time')
-    #corrintp = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time')
+    # calculate rmse
     rmseintp = calc_rmse(orig.sel(variable=varname), intp.sel(variable=varname), dim=('time'))
     rmsefill = calc_rmse(orig.sel(variable=varname), fill.sel(variable=varname), dim=('time'))
 
     # calculate skill score
     skillscore = 1 - (rmsefill/rmseintp)
 
-    # mask regions with less than 10% verification points
-    # mask regions with less than 10% points at all (greenland, deserts etc)
-    #count_landpoints = landmask.where(landmask!=0,1).groupby(regions).count()
-    #count_obspoints = obsmask.groupby(regions).sum()
-    #count_verification = rmsefill.notnull().groupby(regions).sum()
-    #valid_regions = count_verification/count_landpoints > 0.05
-    #included_regions = count_obspoints/count_landpoints > 0.10
+    # mask regions not included
     skillscore = skillscore.where(obsmask) # not obs dark grey
     skillscore = skillscore.where(np.logical_not(landmask), 10) # ocean blue
+    import IPython; IPython.embed()
 
-    #import IPython; IPython.embed()
-    #skillscore = skillscore.groupby(regions).mean()
-
-    #skillscore = skillscore.where(valid_regions)
-    #skillscore = skillscore.where(included_regions)
-
-    #skillscore = aggregate_to_regions(skillscore, regions)
-
-    #landmask.plot(ax=ax, add_colorbar=False, cmap='Greys', transform=transf, vmin=-2, vmax=10)
+    # plot
     im = skillscore.plot(ax=ax, cmap=cmap, vmin=-1, vmax=1, transform=transf, 
                   levels=levels, add_colorbar=False)
-    #regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
-    #                                         ax=ax, add_label=False, projection=transf)
     ax.set_title(varnames_plot[v])
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
