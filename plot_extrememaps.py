@@ -27,7 +27,7 @@ if location == 'California':
     maxlat = 45
     minlat = 30
     maxlon = -105
-    minlon = -135
+    minlon = -125
     time = '2020-08-01'
 elif location == 'Australia':
     maxlat = -11
@@ -47,41 +47,38 @@ else:
 orig = orig.sel(lat=slice(minlat,maxlat), lon=slice(minlon,maxlon))
 fill = fill.sel(lat=slice(minlat,maxlat), lon=slice(minlon,maxlon)) 
 
+# burned area absolute values not ranks
+ba_orig = orig.burned_area
+ba_fill = fill.burned_area
+
 # calculate quantiles
 orig = orig.rank(dim='time', pct=True)
 fill = fill.rank(dim='time', pct=True)
 
-# calculate anomalies
-#orig = (orig.groupby('time.month') - orig.groupby('time.month').mean())# / orig.groupby('time.month').std()
-#era5 = (era5.groupby('time.month') - era5.groupby('time.month').mean())# / era5.groupby('time.month').std()
-#fill = (fill.groupby('time.month') - fill.groupby('time.month').mean())# / fill.groupby('time.month').std()
-
-# calculate quantiles
-#quantiles = fill.groupby('time.month').quantile(np.arange(0.1,1,0.1)).mean(dim=('lat','lon'))
-
-# select 2020
-#timemin = '2020-03-01'
-#timemax = '2020-11-01'
-#
-#orig = orig.sel(time=slice(timemin,timemax))
-#fill = fill.sel(time=slice(timemin,timemax))
-##quantiles = quantiles.sel(month=slice(3,11))
-
+# sel time period
 orig = orig.sel(time=time)
 fill = fill.sel(time=time)
+ba_orig = ba_orig.sel(time=time)
+ba_fill = ba_fill.sel(time=time)
 
 # get ocean different color
 oceanmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon,orig.lat)
 oceanmask = ~np.isnan(oceanmask)
 orig = orig.where(oceanmask, -10)
 fill = fill.where(oceanmask, -10)
+ba_orig = ba_orig.where(oceanmask, -10)
+ba_fill = ba_fill.where(oceanmask, -10)
+
+# get specific color for rank 1, i.e. unprecendented event
+orig = orig.where(orig != 1, 10)
+fill = fill.where(fill != 1, 10)
 
 # plot pre 
-varnames_plot = ['burned area [$km^2$]','2m temperature \nanomalies [$K$]','surface temperature \nanomalies [$K$]',
-                 'diurnal temperature \nrange sfc anomalies [$K$]','precipitation (ground) \n[$mm\;month^{-1}$]',
-                 'precipitation (sat) \n[$mm\;month^{-1}$]','surface layer soil \nmoisture [$m^3\;m^{-3}$]',
-                 'terrestrial water \nstorage [$cm$]'] 
-levels = np.arange(0,1,0.1)
+varnames_plot = ['burned area','2m temperature \nanomalies','surface temperature \nanomalies',
+                 'diurnal temperature \nrange sfc anomalies','precipitation \n(ground)',
+                 'precipitation (sat)','surface layer soil \nmoisture',
+                 'terrestrial water \nstorage'] 
+levels = np.arange(0,1.1,0.1)
 
 # plot
 proj = ccrs.Robinson()
@@ -92,10 +89,15 @@ proj = ccrs.Orthographic(central_longitude=(maxlon+minlon)/2,
 #                                  central_latitude=(maxlat+minlat)/2)
 cmap = plt.get_cmap('coolwarm')   
 cmap_r = plt.get_cmap('coolwarm_r')
+cmap_hot = plt.get_cmap('hot_r')
 cmap.set_under('whitesmoke')
 cmap_r.set_under('whitesmoke')
+cmap_hot.set_under('whitesmoke')
 cmap.set_bad('lightgrey')
 cmap_r.set_bad('lightgrey')
+cmap_hot.set_bad('lightgrey')
+#cmap.set_over('maroon')
+#cmap_r.set_over('maroon')
 
 fig = plt.figure(figsize=(7,14))
 ax1 = fig.add_subplot(8,2,1, projection=proj)
@@ -119,10 +121,12 @@ cbar_kwargs = {'label': ''}
 plt_kwargs = {'vmin': 0, 'vmax': 1, 'transform': transf, 'levels': levels,
               'add_colorbar': False}
 
-im = orig.burned_area.plot(ax=ax1, cmap=cmap, **plt_kwargs)
-fill.burned_area.plot(ax=ax2, cmap=cmap, **plt_kwargs)
+im1 = ba_orig.plot(ax=ax1, cmap=cmap_hot, vmin=0, vmax=10000000, 
+                   transform=transf, add_colorbar=False)
+ba_fill.plot(ax=ax2, cmap=cmap_hot, vmin=0, vmax=10000000, transform=transf, 
+             add_colorbar=False)
 
-orig.temperature_obs.plot(ax=ax3, cmap=cmap, **plt_kwargs)
+im2 = orig.temperature_obs.plot(ax=ax3, cmap=cmap, **plt_kwargs)
 fill.temperature_obs.plot(ax=ax4, cmap=cmap, **plt_kwargs)
 
 orig.surface_temperature.plot(ax=ax5, cmap=cmap, **plt_kwargs)
@@ -143,7 +147,7 @@ fill.soil_moisture.plot(ax=ax14, cmap=cmap_r, **plt_kwargs)
 orig.terrestrial_water_storage.plot(ax=ax15, cmap=cmap_r, **plt_kwargs)
 fill.terrestrial_water_storage.plot(ax=ax16, cmap=cmap_r, **plt_kwargs)
 
-states = regionmask.defined_regions.natural_earth_v5_0_0.us_states_50
+#states = regionmask.defined_regions.natural_earth_v5_0_0.us_states_50
 for ax in (ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10,ax11,ax12,ax13,ax14,ax15,ax16):
     ax.set_title('')
     ax.coastlines()
@@ -155,9 +159,13 @@ ax2.set_title('Gap-Filled')
 for varname, ax in zip(varnames_plot, (ax1,ax3,ax5,ax7,ax9,ax11,ax13,ax15)):
     ax.text(-1.1, 0.5,varname,transform=ax.transAxes, va='center')
 
-cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.7]) # left bottom width height
-cbar = fig.colorbar(im, cax=cbar_ax)
-cbar.set_label('percentile hottest/driest/most burned')
+cbar_ax = fig.add_axes([0.90, 0.15, 0.02, 0.60]) # left bottom width height
+cbar = fig.colorbar(im2, cax=cbar_ax)
+cbar.set_label('percentile hottest/driest')
+
+cbar_ax = fig.add_axes([0.90, 0.80, 0.02, 0.075]) # left bottom width height
+cbar = fig.colorbar(im1, cax=cbar_ax)
+cbar.set_label('$km^2$')
 
 fig.suptitle(f'{time} {location}: Fire, Heat and Water Percentiles')
 plt.subplots_adjust(left=0.3, right=0.8)
