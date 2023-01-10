@@ -10,24 +10,23 @@ from sklearn.cluster import MiniBatchKMeans
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
 parser.add_argument('--n_clusters', '-c', dest='n_clusters', type=int)
-parser.add_argument('--file', '-f', dest='filename', type=str)
-parser.set_defaults(filename=None)
+parser.add_argument('--set', '-s', dest='veriset', type=str)
+parser.set_defaults(veriset=None)
 args = parser.parse_args()
 testcase = args.testcase
 n_clusters = args.n_clusters
-filename = args.filename
-i = filename[-1]
+veriset = args.veriset
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
 # read data
 print(f'{datetime.now()} read data...')
-if filename is None:
+if veriset is None:
     data = xr.open_dataset(f'{esapath}{testcase}/datatable.nc').to_array().T
     mask = xr.open_dataset(f'{esapath}{testcase}/masktable.nc').to_array().T
 else:
-    data = xr.open_dataset(f'{esapath}{testcase}/verification/{filename}_table.nc').to_array().T
-    mask = xr.open_dataset(f'{esapath}{testcase}/verification/mask{filename[4:]}_table.nc').to_array().T
+    data = xr.open_dataset(f'{esapath}{testcase}/verification/set{veriset}/datatable.nc').to_array().T
+    mask = xr.open_dataset(f'{esapath}{testcase}/verification/set{veriset}/masktable.nc').to_array().T
 
 # clustering
 print(f'{datetime.now()} clustering...')
@@ -47,7 +46,7 @@ for c in range(n_clusters):
     mask_c = mask_c.to_dataset(name='data')
 
     # save data
-    if filename is None:
+    if veriset is None:
         data_c.to_netcdf(f'{esapath}{testcase}/clusters/datacluster_init_c{c:02d}.nc')
         
         # save mask
@@ -57,6 +56,6 @@ for c in range(n_clusters):
         mask_c.to_netcdf(f'{esapath}{testcase}/clusters/maskcluster_init_c{c:02d}.nc', 
                          encoding={'data':{'dtype':'bool'}}) 
     else:
-        data_c.to_netcdf(f'{esapath}{testcase}/verification/clusters{i}/datacluster_init_c{c:02d}.nc')
-        mask_c.to_netcdf(f'{esapath}{testcase}/verification/clusters{i}/maskcluster_init_c{c:02d}.nc',
+        data_c.to_netcdf(f'{esapath}{testcase}/verification/set{veriset}/clusters/datacluster_init_c{c:02d}.nc')
+        mask_c.to_netcdf(f'{esapath}{testcase}/verification/set{veriset}/clusters/maskcluster_init_c{c:02d}.nc',
                          encoding={'data':{'dtype':'bool'}}) 
