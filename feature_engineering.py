@@ -14,22 +14,22 @@ from climfill.feature_engineering import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
-parser.add_argument('--file', '-f', dest='filename', type=str)
-parser.set_defaults(filename=None)
+parser.add_argument('--set', '-s', dest='veriset', type=str)
+parser.set_defaults(veriset=None)
 args = parser.parse_args()
 testcase = args.testcase
-filename = args.filename
+veriset = args.veriset
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
 # read data
 print(f'{datetime.now()} read data...')
-if filename is None:
+if veriset is None:
     data = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').to_array().load()
-    mask = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc').to_array().load() #needs to be crossval such taht verification points are updated
+    mask = xr.open_dataset(f'{esapath}/mask_orig.nc').to_array().load() #needs to be crossval such taht verification points are updated
 else:
-    data = xr.open_dataset(f'{esapath}{testcase}/verification/{filename}_interpolated.nc').to_array().load()
-    mask = xr.open_dataset(f'{esapath}{testcase}/verification/mask{filename[4:]}.nc').to_array().load()
+    data = xr.open_dataset(f'{esapath}{testcase}/verification/set{veriset}/data_interpolated.nc').to_array().load()
+    mask = xr.open_dataset(f'{esapath}{testcase}/verification/set{veriset}/mask_crossval.nc').to_array().load()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # constant maps include:
@@ -62,12 +62,12 @@ data = data.to_array()
 
 # step 2.4: add time lags as predictors
 print(f'{datetime.now()} add time lags...')
-lag_007b = create_embedded_feature(data, start=-7,   end=0, name='lag_7b')
-lag_030b = create_embedded_feature(data, start=-30,  end=-7, name='lag_30b')
-lag_180b = create_embedded_feature(data, start=-180, end=-30, name='lag_180b')
-lag_007f = create_embedded_feature(data, start=0,    end=7, name='lag_7f')
-lag_030f = create_embedded_feature(data, start=7,    end=30, name='lag_30f')
-lag_180f = create_embedded_feature(data, start=30,   end=180, name='lag_180f')
+lag_007b = create_embedded_feature(data, start=-3,   end=0, name='lag_7b')
+lag_030b = create_embedded_feature(data, start=-6,  end=-3, name='lag_30b')
+lag_180b = create_embedded_feature(data, start=-12, end=-6, name='lag_180b')
+lag_007f = create_embedded_feature(data, start=0,    end=3, name='lag_7f')
+lag_030f = create_embedded_feature(data, start=3,    end=6, name='lag_30f')
+lag_180f = create_embedded_feature(data, start=6,   end=12, name='lag_180f')
 data = xr.concat(
     [data, lag_007b, lag_030b, lag_180b, lag_007f, lag_030f, lag_180f], 
         dim='variable', join='left', fill_value=0)
@@ -102,9 +102,9 @@ mask = mask.stack(datapoints=('time', 'landpoints')).reset_index('datapoints').T
 print(f'{datetime.now()} save...')
 data = data.to_dataset('variable')
 mask = mask.to_dataset('variable')
-if filename is None:
+if veriset is None:
     data.to_netcdf(f'{esapath}{testcase}/datatable.nc')
     mask.to_netcdf(f'{esapath}{testcase}/masktable.nc')
 else:
-    data.to_netcdf(f'{esapath}{testcase}/verification/{filename}_table.nc')
-    mask.to_netcdf(f'{esapath}{testcase}/verification/mask{filename[4:]}_table.nc')
+    data.to_netcdf(f'{esapath}{testcase}/verification/set{veriset}/datatable.nc')
+    mask.to_netcdf(f'{esapath}{testcase}/verification/set{veriset}/masktable.nc')
