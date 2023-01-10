@@ -1,5 +1,5 @@
 #!/bin/bash
-TESTCASE='test5'
+TESTCASE='test7'
 N_CLUSTERS=30
 COUNT=$(expr $N_CLUSTERS - 1)
 
@@ -24,9 +24,9 @@ COUNT=$(expr $N_CLUSTERS - 1)
 # regression learning
 echo "REGRESSION LEARNING"
 for CLUSTER in $(seq 0 ${COUNT}); do
-    TMP=$(expr $N_CLUSTERS - $CLUSTER)
+    #TMP=$(expr $N_CLUSTERS - $CLUSTER)
     #CLUSTER_PREFIX=$(printf "%02d" ${CLUSTER})
-    CLUSTER_PREFIX=$(printf "%02d" ${TMP})
+    CLUSTER_PREFIX=$(printf "%02d" ${CLUSTER})
     if [[ ! -f /net/so4/landclim/bverena/large_files/climfill_esa/${TESTCASE}/clusters/datacluster_iter_c${CLUSTER_PREFIX}.nc ]]; then 
         echo "cluster ${CLUSTER_PREFIX} subitted to queue ..."
         python regression_learning.py -t ${TESTCASE} -c ${CLUSTER_PREFIX}
