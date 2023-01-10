@@ -11,19 +11,19 @@ from climfill.postprocessing import to_latlon
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
-parser.add_argument('--file', '-f', dest='filename', type=str)
-parser.set_defaults(filename=None)
+parser.add_argument('--set', '-s', dest='veriset', type=str)
+parser.set_defaults(veriset=None)
 args = parser.parse_args()
 testcase = args.testcase
-filename = args.filename
+veriset = args.veriset
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
-if filename is None:
+if veriset is None:
     filepath = f'{esapath}{testcase}/clusters/'
     savepath = f'{esapath}{testcase}/'
 else:
-    filepath = f'{esapath}{testcase}/verification/clusters{filename[-1]}/'
-    savepath = f'{esapath}{testcase}/verification/'
+    filepath = f'{esapath}{testcase}/verification/set{veriset}/clusters/'
+    savepath = f'{esapath}{testcase}/verification/set{veriset}/'
 
 # read data
 print(f'{datetime.now()} read data...')
@@ -39,4 +39,4 @@ data = to_latlon(data, landmask)
 # save
 print(f'{datetime.now()} save...')
 data = data.to_dataset('variable')
-data.to_netcdf(f'{savepath}/dataveri{filename[-1]}_climfilled.nc')
+data.to_netcdf(f'{savepath}/data_climfilled.nc')
