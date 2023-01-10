@@ -24,11 +24,12 @@ verification_year = slice('2004','2005')
 
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','temperature_obs','precipitation_obs',
-            'burned_area','diurnal_temperature_range','snow_cover_fraction'] 
+            'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
 varnames_plot = ['surface layer \nsoil moisture','surface temperature',
                  'precipitation (sat)','terrestrial water storage','2m temperature',
-                 'precipitation (ground)', 'burned area',
-                 'diurnal temperature range sfc','snow cover fraction'] 
+                 'precipitation (ground)', 'snow cover fraction',
+                 'diurnal temperature range sfc','burned area'] 
+varnames_plot = ['SM','LST','PSAT','TWS','T2M','P2M','SCF','DTR','BA']
 
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
@@ -36,8 +37,10 @@ def calc_rmse(dat1, dat2, dim):
 def assemble_verification_cube(testcase, numbers=[0,1,2,3,4,5,6,7,8,9], label='climfilled'):
     mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
     for n, no in enumerate(numbers):
-        fill = xr.open_dataset(f'{esapath}{testcase}/verification/dataveri{no}_{label}.nc')
-        mask_cv = xr.open_dataset(f'{esapath}{testcase}/verification/maskveri{no}.nc')
+        fill = xr.open_dataset(f'{esapath}{testcase}/verification/set{no}/data_{label}.nc')
+        mask_cv = xr.open_dataset(f'{esapath}{testcase}/verification/set{no}/mask_crossval.nc')
+        #fill = xr.open_dataset(f'{esapath}{testcase}/verification/dataveri{no}_{label}.nc')
+        #mask_cv = xr.open_dataset(f'{esapath}{testcase}/verification/maskveri{no}.nc')
         mask = np.logical_and(np.logical_not(mask_orig), mask_cv)
         fill = fill.to_array().reindex(variable=varnames)
         mask = mask.to_array().reindex(variable=varnames)
@@ -136,18 +139,17 @@ for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
     median.set_color('black')
 
 ax1.set_xticks([])
-legend_elements = [Patch(facecolor=col_intp, edgecolor=col_intp, label='Interpolation'),
-                   Patch(facecolor=col_fill, edgecolor=col_fill, label='CLIMFILL')]
+legend_elements = [Patch(facecolor=col_intp, edgecolor='black', label='Interpolation'),
+                   Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL')]
 ax2.legend(handles=legend_elements, loc='upper right')
 ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
-ax1.set_ylim([-1-1,1.1]) 
-ax2.set_ylim([0,1.4]) 
+ax1.set_ylim([-1.1,1.1]) 
+ax2.set_ylim([-0.1,2.5]) 
 ax1.set_xlim([-1,18])
 ax2.set_xlim([-1,18])
 
-ax1.set_title('Pearson correlation of verification pts')
-ax2.set_title('RSME (normalised) of verification pts')
+ax1.set_title('Pearson correlation coefficient')
+ax2.set_title('RSME (normalised)')
 
-plt.subplots_adjust(bottom=0.3)
-#plt.show()
+#plt.subplots_adjust(bottom=0.3)
 plt.savefig('verification.png')
