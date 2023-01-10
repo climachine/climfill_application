@@ -29,10 +29,23 @@ def calc_rmse(dat1, dat2, dim):
 # THE NOT MISSING POINTS OBVSLY) AND ON THE MISSING VALUES IT IS REPRESENTED
 # IN INTP
 
-# read data
+# read climfill data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
+
+# read era data
 era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
+
+# read ismn data
+orig_ismn = xr.open_dataset(f'{esapath}data_orig_ismn.nc')
+fill_ismn = xr.open_dataset(f'{esapath}data_climfilled_ismn.nc')
+ismn = xr.open_dataset('/net/so4/landclim/bverena/large_files/df_gaps.nc')
+
+# remove all ismn stations with less than 3 obs because xr.corr gives 1/-1
+tmp = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
+ismn = ismn.where(tmp >= 3, drop=True)
+orig_ismn = orig_ismn.where(tmp >= 3, drop=True)
+fill_ismn = fill_ismn.where(tmp >= 3, drop=True)
 
 #mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
 #mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
@@ -54,10 +67,6 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'temperature_obs',
             'precipitation_obs','diurnal_temperature_range',
             'snow_cover_fraction'] #hardcoded for now
-varnames_plot = ['surface layer \nsoil moisture','surface temperature',
-                 'precipitation (sat)','2m temperature',
-                 'precipitation (ground)',
-                 'diurnal temperature range sfc','snow cover fraction'] 
 orig = orig.to_array().reindex(variable=varnames)
 era5 = era5.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
@@ -77,23 +86,10 @@ corr_orig = xr.corr(orig, era5, dim=('time'))
 corr_fill = xr.corr(fill, era5, dim=('time'))
 rmse_orig = calc_rmse(orig, era5, dim=('time'))
 rmse_fill = calc_rmse(fill, era5, dim=('time'))
-
-# mean and std over regions
-#corr_orig_err = corr_orig.std(dim=('mask'))
-#corr_fill_err = corr_fill.std(dim=('mask'))
-#rmse_orig_err = rmse_orig.std(dim=('mask'))
-#rmse_fill_err = rmse_fill.std(dim=('mask'))
-#
-#corr_orig = corr_orig.mean(dim='mask')
-#corr_fill = corr_fill.mean(dim='mask')
-#rmse_orig = rmse_orig.mean(dim='mask')
-#rmse_fill = rmse_fill.mean(dim='mask')
-
-# aggregate lat lon for boxplot
-#corr_orig = corr_orig.stack(landpoints=('lat','lon'))
-#corr_fill = corr_fill.stack(landpoints=('lat','lon'))
-#rmse_orig = rmse_orig.stack(landpoints=('lat','lon'))
-#rmse_fill = rmse_fill.stack(landpoints=('lat','lon'))
+corr_orig_ismn = xr.corr(orig_ismn.mrso, ismn.mrso, dim='time')
+corr_fill_ismn = xr.corr(fill_ismn.mrso, ismn.mrso, dim='time')
+rmse_orig_ismn = calc_rmse(orig_ismn.mrso, ismn.mrso, dim='time')
+rmse_fill_ismn = calc_rmse(fill_ismn.mrso, ismn.mrso, dim='time')
 
 # remove nan for boxplot
 def filter_data(data):
@@ -104,6 +100,16 @@ corr_orig = filter_data(corr_orig)
 corr_fill = filter_data(corr_fill)
 rmse_orig = filter_data(rmse_orig)
 rmse_fill = filter_data(rmse_fill)
+corr_orig_ismn = corr_orig_ismn[~np.isnan(corr_orig_ismn)].values
+corr_fill_ismn = corr_fill_ismn[~np.isnan(corr_fill_ismn)].values
+rmse_orig_ismn = rmse_orig_ismn[~np.isnan(rmse_orig_ismn)].values
+rmse_fill_ismn = rmse_fill_ismn[~np.isnan(rmse_fill_ismn)].values
+
+# prepent ismn to era results
+corr_orig = [corr_orig_ismn] + corr_orig
+corr_fill = [corr_fill_ismn] + corr_fill
+rmse_orig = [rmse_orig_ismn] + rmse_orig
+rmse_fill = [rmse_fill_ismn] + rmse_fill
 
 # plot
 fig = plt.figure(figsize=(10,10))
@@ -112,8 +118,18 @@ ax2 = fig.add_subplot(212)
 x_pos =np.arange(0,2*len(corr_orig),2)
 wd = 0.5
 
+varnames_plot = ['ismn','surface layer \nsoil moisture','surface temperature',
+                 'precipitation (sat)','2m temperature',
+                 'precipitation (ground)',
+                 'diurnal temperature range sfc','snow cover fraction'] 
+varnames_plot = ['$SM_{ISMN}$','$SM_{ERA5-Land}$','$LST_{ERA5-Land}$',
+                 '$PSAT_{ERA5-Land}$','$T2M_{ERA5-Land}$',
+                 '$P2M_{ERA5-Land}$',
+                 '$DTR_{ERA5-Land}$','$SNOW_{ERA5-Land}$'] 
 boxplot_kwargs = {'notch': False,
                   'patch_artist': True}
+col_fill = 'coral'
+col_miss = 'steelblue'
 
 b1 = ax1.boxplot(positions=x_pos, x=corr_orig, showfliers=False, **boxplot_kwargs)
 b2 = ax1.boxplot(positions=x_pos+wd, x=corr_fill, showfliers=False, **boxplot_kwargs)
@@ -122,24 +138,26 @@ b3 = ax2.boxplot(positions=x_pos, x=rmse_orig, showfliers=False, **boxplot_kwarg
 b4 = ax2.boxplot(positions=x_pos+wd, x=rmse_fill, showfliers=False, **boxplot_kwargs)
 
 for box in b1['boxes'] + b3['boxes']:
-    box.set_facecolor('blue')
+    box.set_facecolor(col_miss)
 for box in b2['boxes'] + b4['boxes']:
-    box.set_facecolor('orange')
+    box.set_facecolor(col_fill)
+for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
+    median.set_color('black')
 
 ax1.set_xticks([])
-ax2.set_xticks(x_pos+0.5*wd, varnames, rotation=90)
+ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax1.set_ylim([0,1]) 
-ax2.set_ylim([0,1.5]) 
-ax1.set_xlim([-1,14])
-ax2.set_xlim([-1,14])
+ax2.set_ylim([0,1.4]) 
+ax1.set_xlim([-1,16])
+ax2.set_xlim([-1,16])
 
-ax1.set_title('pearson correlation')
+ax1.set_title('Pearson correlation coefficient')
 ax2.set_title('RSME (normalised)')
 
 ax2.set_xticklabels(varnames_plot)
 
-legend_elements = [Patch(facecolor='blue', edgecolor='blue', label='With Gaps'),
-                   Patch(facecolor='orange', edgecolor='orange', label='Gap-filled')]
-ax1.legend(handles=legend_elements, loc='upper right')
+legend_elements = [Patch(facecolor=col_miss, edgecolor='black', label='With Gaps'),
+                   Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL')]
+ax2.legend(handles=legend_elements, loc='upper right')
 plt.subplots_adjust(bottom=0.3)
 plt.savefig('benchmarking.png')
