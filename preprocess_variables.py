@@ -50,8 +50,8 @@ ds_out = xr.Dataset({'lat': (['lat'], np.arange(-89.75,90, 0.5)), # same as cdo_
 
 # flags for running scripts
 itopo = False
-ifire = True
-ifireinit = True
+ifire = False
+ifireinit = False
 ipermafrost = False
 ilandcover = False
 ilstpre = False
@@ -105,10 +105,15 @@ if ifireinit:
     filepath = landclimstoragepath + \
                'ESA-CCI-Fire_AVHRR-LTDR/v1.1/0.25deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*.nc')['burned_area']
+    mask = xr.open_mfdataset(f'{filepath}*.nc')['fraction_of_observed_area']
 
     data = data.sel(time=timeslice)
+    mask = mask.sel(time=timeslice)
 
     assert np.isnan(data).sum().values.item() == 0 # no missing values
+
+    mask = mask > 50 # where more than 15 nans
+    data = data.where(mask) # keep where less than 15 nans
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
@@ -195,8 +200,7 @@ if ilstpost:
 
     # create mask for less than 15 days of data
     mask = np.isnan(data).astype(float).resample(time='MS').sum() # how many nans
-    import IPython; IPython.embed()
-    mask = mask <= 5 # where less than 15 nans
+    mask = mask <= 15 # where less than 15 nans
     data = data.resample(time='MS').mean()
     data = data.where(mask) # keep where less than 15 nans
 
@@ -220,8 +224,11 @@ if ilstpostinit:
     # fill missing days in data as fully nan
     data = data.resample(time='D').asfreq()
 
-    #  take all vars for init guess
+    # create mask for less than 15 days of data
+    mask = np.isnan(data).astype(float).resample(time='MS').sum() # how many nans
+    mask = mask > 15 # where less than 15 nans
     data = data.resample(time='MS').mean()
+    data = data.where(mask) # keep where less than 15 nans
 
     data = data.sel(time=timeslice)
 
@@ -377,8 +384,11 @@ if isnowpreinit:
         # missing values are above 200
         data = data.where(data <= 100, np.nan)
 
-        # mean over all avail points
+        # create mask for less than 15 days of data
+        mask = np.isnan(data).astype(float).resample(time='MS').sum()
+        mask = mask > 15
         data = data.resample(time='MS').mean()
+        data = data.where(mask)
 
         # regrid
         regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
@@ -425,8 +435,11 @@ if isminit:
 
     data = data.sel(time=timeslice)
 
-    # mean of all available variables
+    # create mask for less than 15 days of data
+    mask = np.isnan(data).astype(float).resample(time='MS').sum()
+    mask = mask > 15
     data = data.resample(time='MS').mean()
+    data = data.where(mask)
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
@@ -486,8 +499,6 @@ if iobs:
     mask = mask.resample(time='MS').mean() # M-mid to MS
 
     # sel timeperiod
-    #data = data.sel(time=slice('1995','2013')) #DEBUG
-    #mask = mask.sel(time=slice('1995','2013')) #DEBUG
     data = data.sel(time=timeslice).load()
     mask = mask.sel(time=timeslice).load()
 
@@ -497,9 +508,6 @@ if iobs:
 
     # elongate mask DEBUG
     mask = mask.reindex(time=data.time, method='ffill')
-
-    # mask areas with 0 station influence
-    #data = data.where(mask != 0, np.nan)
 
     # mask areas with 0 station count
     data = data.where(mask != 0, np.nan)
@@ -517,8 +525,6 @@ if iobs:
     mask = mask.resample(time='MS').mean().load() # M-mid to MS
 
     # sel timeperiod
-    #data = data.sel(time=slice('1995','2013')) #DEBUG
-    #mask = mask.sel(time=slice('1995','2013')) #DEBUG
     data = data.sel(time=timeslice)
     mask = mask.sel(time=timeslice)
 
@@ -542,14 +548,26 @@ if iobsinit:
     # temperature
     filepath = landclimstoragepath + \
     'CRUTS/v4.06/0.5deg_lat-lon_1m/original/'
+    maskpath = landclimstoragepath + \
+    'CRUTS_stations/v3.26/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*tmp*.nc')['tmp']
+    mask = xr.open_mfdataset(f'{maskpath}*tmp.st0.nc')['st0']
 
-    data = data.sel(time=timeslice)
     data = data.resample(time='MS').mean() # M-mid to MS
+    mask = mask.resample(time='MS').mean() # M-mid to MS
+
+    data = data.sel(time=timeslice).load()
+    mask = mask.sel(time=timeslice).load()
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
+    mask = regridder(mask)
 
+    # elongate mask DEBUG
+    mask = mask.reindex(time=data.time, method='ffill')
+
+    # mask areas with stations 
+    data = data.where(mask == 0, np.nan)
     data = data.to_dataset(name='temperature_obs')
     data.to_netcdf(f'{esapath}temperature_obs_init.nc')
 
@@ -557,12 +575,24 @@ if iobsinit:
     filepath = landclimstoragepath + \
     'CRUTS/v4.02/0.5deg_lat-lon_1m/original/'
     data = xr.open_mfdataset(f'{filepath}*pre*.nc')['pre']
+    mask = xr.open_mfdataset(f'{maskpath}*pre.st0.nc')['st0']
 
+    data = data.resample(time='MS').mean().load() # M-mid to MS
+    mask = mask.resample(time='MS').mean().load() # M-mid to MS
+
+    # sel timeperiod
     data = data.sel(time=timeslice)
-    data = data.resample(time='MS').mean() # M-mid to MS
+    mask = mask.sel(time=timeslice)
 
     regridder = xe.Regridder(data, ds_out, 'bilinear', reuse_weights=False) 
     data = regridder(data)
+    mask = regridder(mask)
+
+    # elongate mask DEBUG
+    mask = mask.reindex(time=data.time, method='ffill')
+
+    # mask areas with stations
+    data = data.where(mask == 0, np.nan)
 
     data = data.to_dataset(name='precipitation_obs')
     data.to_netcdf(f'{esapath}precipitation_obs_init.nc')
