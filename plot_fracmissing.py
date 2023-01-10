@@ -121,9 +121,14 @@ masktimeline.diurnal_temperature_range.T.plot(ax=ax17, cmap=cmap, vmin=0,
 masktimeline.burned_area.T.plot(ax=ax18, cmap=cmap, vmin=0, 
                            vmax=1, add_colorbar=False)
 
-for varname, ax in zip(varnames, (ax1,ax2,ax3,ax7,ax8,ax9,ax13,ax14,ax15)):
+varnames_plot = ['SM','LST','PSAT', #for order of plots
+            'TWS', 'T2M','P2M',
+            'SCF', 'DTR', 'BA']
+#varnames_plot = ['surface layer \n soil moisture','land surface temperature',
+#                 'precipitation \n(satellite)', 
+for v, (varname, ax) in enumerate(zip(varnames, (ax1,ax2,ax3,ax7,ax8,ax9,ax13,ax14,ax15))):
     frac = np.around(frac_mis[varname].item()*100, decimals=2)
-    ax.set_title(f'{varname}: {frac}% missing')
+    ax.set_title(f'{varnames_plot[v]}: {frac}% missing')
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.7]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax)
