@@ -74,9 +74,9 @@ orig = orig.where(orig != 1, 10)
 fill = fill.where(fill != 1, 10)
 
 # plot pre 
-varnames_plot = ['burned area','2m temperature \nanomalies','surface temperature \nanomalies',
-                 'diurnal temperature \nrange sfc anomalies','precipitation \n(ground)',
-                 'precipitation (sat)','surface layer soil \nmoisture',
+varnames_plot = ['burned area','2m temperature (in situ)','land surface temperature',
+                 'diurnal temperature \nrange','precipitation \n(ground)',
+                 'precipitation (satellite)','surface layer soil \nmoisture',
                  'terrestrial water \nstorage'] 
 levels = np.arange(0,1.1,0.1)
 
