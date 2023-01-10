@@ -12,12 +12,12 @@ from climfill.regression_learning import Imputation
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
 parser.add_argument('--cluster', '-c', dest='cluster', type=int)
-parser.add_argument('--file', '-f', dest='filename', type=str)
-parser.set_defaults(filename=None)
+parser.add_argument('--set', '-s', dest='veriset', type=str)
+parser.set_defaults(veriset=None)
 args = parser.parse_args()
 testcase = args.testcase
 c = args.cluster
-filename = args.filename
+veriset = args.veriset
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 #esapath = '/cluster/work/climate/bverena/climfill_esa_cci/' # euler
@@ -27,10 +27,10 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'temperature_obs','precipitation_obs','burned_area',
             'diurnal_temperature_range'] #hardcoded for now
 
-if filename is None:
+if veriset is None:
     filepath = f'{esapath}{testcase}/clusters/'
 else:
-    filepath = f'{esapath}{testcase}/verification/clusters{filename[-1]}/'
+    filepath = f'{esapath}{testcase}/verification/set{veriset}/clusters/'
 
 # read data
 # mask needs explicit bool otherwise lostmask is saved as int (0,1) and 
