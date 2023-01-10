@@ -20,13 +20,13 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
 # crossval settings
 frac_mis = 0.1 
-ncubes = 20
+ncubes = 24 # needs to be >= nt
 vf_year = '2004'
 cv_year = '2005'
 
 # read data cube
 print(f'{datetime.now()} read data...')
-data = xr.open_dataset(f'{esapath}{testcase}/data_initguess.nc').to_array()
+data = xr.open_dataset(f'{esapath}data_orig.nc').to_array()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # mask needs to be computed separately
@@ -68,8 +68,8 @@ for varname in varnames:
 # save
 for d, dat in enumerate(datasets):
     mask = np.isnan(dat)
-    mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/maskveri{d}.nc')
-    dat.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/dataveri{d}.nc')
+    dat.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{d}/data_crossval.nc')
+    mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{d}/mask_crossval.nc')
 
 # delete values for verification
 #for varname in varnames:
