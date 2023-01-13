@@ -27,8 +27,47 @@ def calc_rmse(dat1, dat2, dim):
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
-fill = xr.open_dataset(f'{esapath}{testcase}/verification/data_climfilled.nc')
-intp = xr.open_dataset(f'{esapath}{testcase}/verification/data_interpolated.nc')
+#fill = xr.open_dataset(f'{esapath}{testcase}/verification/data_climfilled.nc')
+#intp = xr.open_dataset(f'{esapath}{testcase}/verification/data_interpolated.nc')
+#intp0 = xr.open_dataset(f'{esapath}{testcase}/verification/set0/data_interpolated_tmp.nc') #DEBUG
+#fill0 = xr.open_dataset(f'{esapath}{testcase}/verification/set0/data_climfilled_tmp.nc') #DEBUG
+intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolated_tmp.nc').load()
+fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_tmp.nc').load()
+init = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_initguess_tmp.nc').load()
+
+# select verification year
+orig = orig.sel(time=verification_year).load()
+
+# sort data
+varnames = ['soil_moisture','surface_temperature','precipitation',
+            'terrestrial_water_storage','temperature_obs','precipitation_obs',
+            'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
+varnames_plot = ['SM','LST','PSAT', #for order of plots
+            'TWS', 'T2M','P2M',
+            'SCF', 'DTR', 'BA']
+orig = orig.to_array().reindex(variable=varnames)
+intp = intp.to_array().reindex(variable=varnames)
+fill = fill.to_array().reindex(variable=varnames)
+init = init.to_array().reindex(variable=varnames)
+
+intp_set = intp.mean(dim='veriset')
+fill_set = fill.mean(dim='veriset')
+init_set = init.mean(dim='veriset')
+
+## DEBUG
+varname = 'soil_moisture'
+lat = -25
+lon = 124
+for veriset in range(10):
+    orig.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='black')
+    intp_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='orange')
+    #init_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').plot(color='red')
+    #fill_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').plot(color='blue')
+    #intp.sel(variable=varname, veriset=veriset).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='yellow')
+    #fill.sel(variable=varname, veriset=veriset).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='lightblue')
+    #init.sel(variable=varname, veriset=veriset).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='lightcoral')
+    plt.show()
+quit()
 
 # (optional) calculate anomalies
 orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
@@ -42,26 +81,6 @@ datastd = orig.std()
 orig = (orig - datamean) / datastd
 intp = (intp - datamean) / datastd
 fill = (fill - datamean) / datastd
-
-# select verification year
-orig = orig.sel(time=verification_year).load()
-intp = intp.sel(time=verification_year).load()
-fill = fill.sel(time=verification_year).load()
-
-# sort data
-varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','temperature_obs','precipitation_obs',
-            'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
-#varnames_plot = ['surface layer \nsoil moisture','surface temperature',
-#                 'precipitation (sat)','terrestrial water storage','2m temperature',
-#                 'precipitation (ground)', 'burned area',
-#                 'diurnal temperature range sfc','snow cover fraction'] 
-varnames_plot = ['SM','LST','PSAT', #for order of plots
-            'TWS', 'T2M','P2M',
-            'SCF', 'DTR', 'BA']
-orig = orig.to_array().reindex(variable=varnames)
-intp = intp.to_array().reindex(variable=varnames)
-fill = fill.to_array().reindex(variable=varnames)
 
 # plot
 proj = ccrs.Robinson()
@@ -100,6 +119,7 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
 
     # calculate skill score
     skillscore = 1 - (rmsefill/rmseintp)
+    skillscore = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time') #DEBUG
 
     # mask regions not included
     skillscore = skillscore.where(obsmask) # not obs dark grey
