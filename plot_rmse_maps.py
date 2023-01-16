@@ -54,24 +54,6 @@ varnames_plot = ['SM','LST','PSAT', #for order of plots
 orig = orig.to_array().reindex(variable=varnames)
 intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
-#init = init.to_array().reindex(variable=varnames)
-
-#init_set = init.mean(dim='veriset')
-
-## DEBUG
-#varname = 'soil_moisture'
-#lat = -25
-#lon = 124
-#for veriset in range(10):
-#    orig.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='black')
-#    intp_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='orange')
-#    #init_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').plot(color='red')
-#    #fill_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').plot(color='blue')
-#    #intp.sel(variable=varname, veriset=veriset).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='yellow')
-#    #fill.sel(variable=varname, veriset=veriset).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='lightblue')
-#    #init.sel(variable=varname, veriset=veriset).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='lightcoral')
-#    plt.show()
-#quit()
 
 # (optional) calculate anomalies
 orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
@@ -92,12 +74,12 @@ ax7 = fig.add_subplot(337, projection=proj)
 ax8 = fig.add_subplot(338, projection=proj)
 ax9 = fig.add_subplot(339, projection=proj)
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]
-levels = np.arange(-1,1.1,0.1)
+levels = np.arange(0,0.32,0.02)
 landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
 regions = regionmask.defined_regions.ar6.land.mask(orig.lon, orig.lat)
 regions = regions.where(~np.isnan(landmask))
 obsmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
-cmap = plt.get_cmap('seismic_r')
+cmap = plt.get_cmap('Reds')
 cmap.set_under('aliceblue')
 cmap.set_bad('lightgrey')
 fs = 15
@@ -115,22 +97,21 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
     rmsefill = calc_rmse(orig.sel(variable=varname), fill.sel(variable=varname), dim=('time'))
 
     # calculate skill score
-    skillscore = 1 - (rmsefill/rmseintp)
-    skillscore = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time') #DEBUG
-    #skillscore = rmsefill # DEBUG
+    skillscore = rmsefill # DEBUG
+    print(varname, skillscore.median().item())
 
     # mask regions not included
     skillscore = skillscore.where(obsmask) # not obs dark grey
     skillscore = skillscore.where(np.logical_not(landmask), -10) # ocean blue
 
     # plot
-    im = skillscore.plot(ax=ax, cmap=cmap, vmin=-1, vmax=1, transform=transf, 
+    im = skillscore.plot(ax=ax, cmap=cmap, vmin=0, vmax=0.32, transform=transf, 
                   levels=levels, add_colorbar=False)
     ax.set_title(varnames_plot[v], fontsize=fs)
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
-cbar.set_label('Pearson correlation coefficient', fontsize=fs)
-fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
+cbar.set_label('RMSE on normalized values', fontsize=fs)
+fig.suptitle('(c) RMSE on normalized anomalies', fontsize=20)
 
-plt.savefig('correlation_maps.png')
+plt.savefig('rmse_maps.png')

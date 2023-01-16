@@ -25,50 +25,23 @@ verification_year = slice('2004','2005')
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','temperature_obs','precipitation_obs',
             'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
-varnames_plot = ['surface layer \nsoil moisture','surface temperature',
-                 'precipitation (sat)','terrestrial water storage','2m temperature',
-                 'precipitation (ground)', 'snow cover fraction',
-                 'diurnal temperature range sfc','burned area'] 
+#varnames_plot = ['surface layer \nsoil moisture','surface temperature',
+#                 'precipitation (sat)','terrestrial water storage','2m temperature',
+#                 'precipitation (ground)', 'snow cover fraction',
+#                 'diurnal temperature range sfc','burned area'] 
 varnames_plot = ['SM','LST','PSAT','TWS','T2M','P2M','SCF','DTR','BA']
 
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
 
-def assemble_verification_cube(testcase, numbers=[0,1,2,3,4,5,6,7,8,9], label='climfilled'):
-    mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
-    res = np.zeros((9,24,360,720))
-    for n, no in enumerate(numbers):
-        #fill = xr.open_dataset(f'{esapath}{testcase}/verification/set{no}/data_{label}.nc')
-        #mask_cv = xr.open_dataset(f'{esapath}{testcase}/verification/set{no}/mask_crossval.nc')
-        fill = xr.open_dataset(f'{esapath}{testcase}/verification/dataveri{no}_{label}.nc')
-        mask_cv = xr.open_dataset(f'{esapath}{testcase}/verification/maskveri{no}.nc')
-        mask = np.logical_and(np.logical_not(mask_orig), mask_cv)
-        fill = fill.to_array().reindex(variable=varnames)
-        mask = mask.to_array().reindex(variable=varnames)
-
-        if n == 0:
-            res = xr.full_like(fill, np.nan)
-        res = res.where(np.logical_not(mask), fill)
-
-        fill = fill.where(mask)
-        fill = fill.expand_dims(veriset=[no])
-        #fill.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{no}/data_{label}_tmp.nc')
-        #fill = fill.where(mask,0)
-        #res = res + fill.values
-
-    #result = xr.full_like(fill, np.nan)
-    #result.values = res
-    #return result
-    return res
-
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
-fill = assemble_verification_cube(testcase).to_dataset('variable')
-intp = assemble_verification_cube(testcase, label='interpolated').to_dataset('variable')
-#init = assemble_verification_cube(testcase, label='initguess').to_dataset('variable')
-fill.to_netcdf(f'{esapath}{testcase}/verification/data_climfilled.nc')
-intp.to_netcdf(f'{esapath}{testcase}/verification/data_interpolated.nc')
-#intp = xr.open_dataset(f'{esapath}{testcase}/verification/set9/data_interpolated.nc') #DEBUG
+intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolated_del.nc')
+fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_del.nc')
+
+# average over all set
+intp_set = intp.mean(dim='veriset').load()
+fill_set = fill.mean(dim='veriset').load()
 
 # normalise values for RMSE plotting
 datamean = orig.mean()
@@ -158,13 +131,14 @@ rmse_intp_seas = filter_data(rmse_intp_seas)
 rmse_fill_seas = filter_data(rmse_fill_seas)
 
 # plot
-fig = plt.figure(figsize=(30,10))
+fig = plt.figure(figsize=(25,10))
 ax1 = fig.add_subplot(231)
 ax2 = fig.add_subplot(232)
 ax3 = fig.add_subplot(233)
 ax4 = fig.add_subplot(234)
 ax5 = fig.add_subplot(235)
 ax6 = fig.add_subplot(236)
+fs = 15
 
 x_pos =np.arange(0,2*len(corr_intp),2)
 wd = 0.5
@@ -179,6 +153,7 @@ b2 = ax1.boxplot(positions=x_pos+wd, x=corr_fill, showfliers=False, **boxplot_kw
 
 b3 = ax2.boxplot(positions=x_pos, x=corr_intp_anom, showfliers=False, **boxplot_kwargs)
 b4 = ax2.boxplot(positions=x_pos+wd, x=corr_fill_anom, showfliers=False, **boxplot_kwargs)
+import IPython; IPython.embed()
 
 b5 = ax3.boxplot(positions=x_pos, x=corr_intp_seas, showfliers=False, **boxplot_kwargs)
 b6 = ax3.boxplot(positions=x_pos+wd, x=corr_fill_seas, showfliers=False, **boxplot_kwargs)
@@ -208,25 +183,36 @@ ax3.set_xticks([])
 legend_elements = [Patch(facecolor=col_intp, edgecolor='black', label='Interpolation'),
                    Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL')]
 
-ax6.legend(handles=legend_elements, loc='upper right')
+ax6.legend(handles=legend_elements, loc='upper right', fontsize=fs)
 
-ax4.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
-ax5.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
-ax6.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax4.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90, fontsize=fs)
+ax5.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90, fontsize=fs)
+ax6.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90, fontsize=fs)
 
-ax1.set_ylim([-1.1,1.1]) 
-ax2.set_ylim([-1.1,1.1]) 
-ax3.set_ylim([-1.1,1.1]) 
+ax1.set_ylim([-0.5,1.1]) 
+ax2.set_ylim([-0.5,1.1]) 
+ax3.set_ylim([-0.5,1.1]) 
 
-ax4.set_ylim([-0.1,2.5]) 
-ax5.set_ylim([-0.1,2.5]) 
-ax6.set_ylim([-0.1,2.5]) 
+ax4.set_ylim([-0.0,0.9]) 
+ax5.set_ylim([-0.0,0.9]) 
+ax6.set_ylim([-0.0,0.9]) 
 
 ax1.set_xlim([-1,18])
 ax2.set_xlim([-1,18])
 
-ax1.set_title('Pearson correlation coefficient')
-ax2.set_title('RSME (normalised)')
+#ax1.set_title('Pearson correlation coefficient')
+#ax2.set_title('Pearson correlation coefficient')
+#ax3.set_title('Pearson correlation coefficient')
+#ax4.set_title('RSME (normalized)')
+#ax5.set_title('RSME (normalized)')
+#ax6.set_title('RSME (normalized)')
+ax1.set_title('Time series', fontsize=fs)
+ax2.set_title('Anomalies of time series', fontsize=fs)
+ax3.set_title('Seasonal cycle', fontsize=fs)
+
+ax1.set_ylabel('Pearson correlation coefficient', fontsize=fs)
+ax4.set_ylabel('RMSE on normalized values', fontsize=fs)
+fig.suptitle('(a) Verification scores', fontsize=20)
 
 #plt.subplots_adjust(bottom=0.3)
 plt.savefig('verification.png')
