@@ -106,10 +106,10 @@ rmse_orig_ismn = rmse_orig_ismn[~np.isnan(rmse_orig_ismn)].values
 rmse_fill_ismn = rmse_fill_ismn[~np.isnan(rmse_fill_ismn)].values
 
 # prepent ismn to era results
-corr_orig = [corr_orig_ismn] + corr_orig
-corr_fill = [corr_fill_ismn] + corr_fill
-rmse_orig = [rmse_orig_ismn] + rmse_orig
-rmse_fill = [rmse_fill_ismn] + rmse_fill
+#corr_orig = [corr_orig_ismn] + corr_orig
+#corr_fill = [corr_fill_ismn] + corr_fill
+#rmse_orig = [rmse_orig_ismn] + rmse_orig
+#rmse_fill = [rmse_fill_ismn] + rmse_fill
 
 # plot
 fig = plt.figure(figsize=(10,10))
@@ -117,6 +117,7 @@ ax1 = fig.add_subplot(211)
 ax2 = fig.add_subplot(212)
 x_pos =np.arange(0,2*len(corr_orig),2)
 wd = 0.5
+fs = 15
 
 varnames_plot = ['ismn','surface layer \nsoil moisture','surface temperature',
                  'precipitation (sat)','2m temperature',
@@ -126,21 +127,32 @@ varnames_plot = ['$SM_{ISMN}$','$SM_{ERA5-Land}$','$LST_{ERA5-Land}$',
                  '$PSAT_{ERA5-Land}$','$T2M_{ERA5-Land}$',
                  '$P2M_{ERA5-Land}$',
                  '$DTR_{ERA5-Land}$','$SNOW_{ERA5-Land}$'] 
+varnames_plot = ['surface layer \nsoil moisture','surface temperature',
+                 'precipitation (sat)','2m temperature',
+                 'precipitation (ground)',
+                 'diurnal temperature range sfc','snow cover fraction'] 
+#varnames_plot = ['$SM_{ERA5-Land}$','$LST_{ERA5-Land}$',
+#                 '$PSAT_{ERA5-Land}$','$T2M_{ERA5-Land}$',
+#                 '$P2M_{ERA5-Land}$',
+#                 '$DTR_{ERA5-Land}$','$SNOW_{ERA5-Land}$'] 
+varnames_plot = ['SM','LST','PSAT', #for order of plots
+            'T2M','P2M',
+            'DTR', 'SCF']
 boxplot_kwargs = {'notch': False,
                   'patch_artist': True}
 col_fill = 'coral'
 col_miss = 'steelblue'
 
-b1 = ax1.boxplot(positions=x_pos, x=corr_orig, showfliers=False, **boxplot_kwargs)
-b2 = ax1.boxplot(positions=x_pos+wd, x=corr_fill, showfliers=False, **boxplot_kwargs)
+b1 = ax1.boxplot(positions=x_pos, x=corr_fill, showfliers=False, **boxplot_kwargs)
+b2 = ax1.boxplot(positions=x_pos+wd, x=corr_orig, showfliers=False, **boxplot_kwargs)
 
-b3 = ax2.boxplot(positions=x_pos, x=rmse_orig, showfliers=False, **boxplot_kwargs)
-b4 = ax2.boxplot(positions=x_pos+wd, x=rmse_fill, showfliers=False, **boxplot_kwargs)
+b3 = ax2.boxplot(positions=x_pos, x=rmse_fill, showfliers=False, **boxplot_kwargs)
+b4 = ax2.boxplot(positions=x_pos+wd, x=rmse_orig, showfliers=False, **boxplot_kwargs)
 
 for box in b1['boxes'] + b3['boxes']:
-    box.set_facecolor(col_miss)
-for box in b2['boxes'] + b4['boxes']:
     box.set_facecolor(col_fill)
+for box in b2['boxes'] + b4['boxes']:
+    box.set_facecolor(col_miss)
 for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
     median.set_color('black')
 
@@ -148,16 +160,17 @@ ax1.set_xticks([])
 ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax1.set_ylim([0,1]) 
 ax2.set_ylim([0,1.4]) 
-ax1.set_xlim([-1,16])
-ax2.set_xlim([-1,16])
+ax1.set_xlim([-1,14])
+ax2.set_xlim([-1,14])
 
-ax1.set_title('Pearson correlation coefficient')
-ax2.set_title('RSME (normalised)')
+ax1.set_ylabel('Pearson correlation coefficient', fontsize=fs)
+ax2.set_ylabel('RMSE on normalized values', fontsize=fs)
+fig.suptitle('(b) Benchmarking scores', fontsize=20)
 
-ax2.set_xticklabels(varnames_plot)
+ax2.set_xticklabels(varnames_plot, fontsize=fs)
 
-legend_elements = [Patch(facecolor=col_miss, edgecolor='black', label='With Gaps'),
-                   Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL')]
-ax2.legend(handles=legend_elements, loc='upper right')
-plt.subplots_adjust(bottom=0.3)
+legend_elements = [Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL'),
+                   Patch(facecolor=col_miss, edgecolor='black', label='With Gaps')]
+ax2.legend(handles=legend_elements, loc='upper right', fontsize=fs)
+#plt.subplots_adjust(bottom=0.3)
 plt.savefig('benchmarking.png')
