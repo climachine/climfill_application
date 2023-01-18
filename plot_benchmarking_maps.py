@@ -80,6 +80,7 @@ ax7 = fig.add_subplot(337, projection=proj)
 ax8 = fig.add_subplot(338, projection=proj)
 ax9 = fig.add_subplot(339, projection=proj)
 levels = np.arange(-1,1.1,0.1)
+fs = 15
 
 cmap = plt.get_cmap('seismic_r')
 cmap.set_over('aliceblue')
@@ -123,11 +124,12 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
 
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]
 for ax, varname in zip(axes, varnames_plot):
-    ax.set_title(varname)
+    ax.set_title(varname, fontsize=fs)
 
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
-cbar.set_label('Pearson correlation')
+cbar.set_label('Pearson correlation coefficient', fontsize=fs)
+fig.suptitle('(a) Pearson correlation coefficient on anomalies', fontsize=20)
 
 plt.savefig('benchmarking_maps.png')
