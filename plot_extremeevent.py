@@ -100,10 +100,10 @@ def plot_quantiles(quantiles,xaxis,cols,ax,zero=0):
                         quantiles.sel(quantile=qu-0.1, method='nearest').values, color=col)
 
 # nice plotting varnames
-varnames_plot = ['burned area [$km^2$]','2m temperature anomalies [$K$]','surface temperature anomalies [$K$]',
-                 'diurnal temperature range sfc anomalies [$K$]','precipitation (ground) [$mm\;month^{-1}$]',
-                 'precipitation (sat) [$mm\;month^{-1}$]','surface layer soil moisture [$m^3\;m^{-3}$]',
-                 'terrestrial water storage [$cm$]'] 
+varnames_plot = ['burned area [$km^2$]','2m temperature (in-situ)','land surface temperature',
+                 'diurnal temperature range','precipitation (in-situ)',
+                 'precipitation (satellite)','surface layer soil moisture',
+                 'terrestrial water storage'] 
 
 # plot timelines
 fig = plt.figure(figsize=(10,17))
