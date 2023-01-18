@@ -6,9 +6,12 @@ import argparse
 import numpy as np
 import regionmask
 import cartopy.crs as ccrs
-from scipy.spatial.distance import jensenshannon as js
 import xarray as xr
 import matplotlib.pyplot as plt
+
+# NOTE:
+# JS not possible bec needs times where all 8 vars are observed (i.e. in the
+#      verification set) at the same time. ditched for now
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
@@ -18,23 +21,23 @@ testcase = args.testcase
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 verification_year = slice('2004','2005')
 
+varnames = ['soil_moisture','surface_temperature','precipitation',
+            'terrestrial_water_storage','temperature_obs','precipitation_obs',
+            'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
+
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
 
-# NOTE:
-# JS not possible bec needs times where all 8 vars are observed (i.e. in the
-#      verification set) at the same time. ditched for now
-
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
-intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolated_del.nc').load()
-fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_del.nc').load()
+intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolated_del.nc')
+fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_del.nc')
 
-intp = intp.mean(dim='veriset')
-fill = fill.mean(dim='veriset')
+# average over all set
+intp = intp.mean(dim='veriset').load()
+fill = fill.mean(dim='veriset').load()
 
-# normalise values such that RMSEs (i.e. negative skill scores) are comparable
-# and rounding has same effect on every variable
+# normalise values for RMSE plotting
 datamean = orig.mean()
 datastd = orig.std()
 orig = (orig - datamean) / datastd
@@ -45,9 +48,6 @@ fill = (fill - datamean) / datastd
 orig = orig.sel(time=verification_year).load()
 
 # sort data
-varnames = ['soil_moisture','surface_temperature','precipitation',
-            'terrestrial_water_storage','temperature_obs','precipitation_obs',
-            'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
 varnames_plot = ['SM','LST','PSAT', #for order of plots
             'TWS', 'T2M','P2M',
             'SCF', 'DTR', 'BA']
@@ -97,8 +97,8 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
     rmsefill = calc_rmse(orig.sel(variable=varname), fill.sel(variable=varname), dim=('time'))
 
     # calculate skill score
-    skillscore = rmsefill # DEBUG
-    print(varname, skillscore.median().item())
+    skillscore = rmseintp # DEBUG
+    print(varname, rmseintp.median().item())
 
     # mask regions not included
     skillscore = skillscore.where(obsmask) # not obs dark grey
