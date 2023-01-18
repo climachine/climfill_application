@@ -5,14 +5,13 @@ NAMESTRING
 import argparse
 import numpy as np
 import regionmask
-from scipy.spatial.distance import jensenshannon as js
 import xarray as xr
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-# TODO 
-# mask is the same for two subsequent months???
-# use trained Regr from full timeline?
+# NOTE:
+# JS not possible bec needs times where all 8 vars are observed (i.e. in the
+#      verification set) at the same time. ditched for now
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
@@ -25,11 +24,6 @@ verification_year = slice('2004','2005')
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','temperature_obs','precipitation_obs',
             'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
-#varnames_plot = ['surface layer \nsoil moisture','surface temperature',
-#                 'precipitation (sat)','terrestrial water storage','2m temperature',
-#                 'precipitation (ground)', 'snow cover fraction',
-#                 'diurnal temperature range sfc','burned area'] 
-varnames_plot = ['SM','LST','PSAT','TWS','T2M','P2M','SCF','DTR','BA']
 
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
@@ -40,8 +34,8 @@ intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolat
 fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_del.nc')
 
 # average over all set
-intp_set = intp.mean(dim='veriset').load()
-fill_set = fill.mean(dim='veriset').load()
+intp = intp.mean(dim='veriset').load()
+fill = fill.mean(dim='veriset').load()
 
 # normalise values for RMSE plotting
 datamean = orig.mean()
@@ -54,9 +48,18 @@ fill = (fill - datamean) / datastd
 orig = orig.sel(time=verification_year).load()
 
 # sort data
+varnames_plot = ['SM','LST','PSAT', #for order of plots
+            'TWS', 'T2M','P2M',
+            'SCF', 'DTR', 'BA']
 orig = orig.to_array().reindex(variable=varnames)
 intp = intp.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
+
+# mask again Greenland etc
+obsmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
+orig = orig.where(obsmask) # not obs dark grey
+intp = intp.where(obsmask) # not obs dark grey
+fill = fill.where(obsmask) # not obs dark grey
 
 # (optional) calculate anomalies
 orig_seas = orig.groupby('time.month').mean()
@@ -131,6 +134,7 @@ rmse_intp_seas = filter_data(rmse_intp_seas)
 rmse_fill_seas = filter_data(rmse_fill_seas)
 
 # plot
+varnames_plot = ['SM','LST','PSAT','TWS','T2M','P2M','SCF','DTR','BA']
 fig = plt.figure(figsize=(25,10))
 ax1 = fig.add_subplot(231)
 ax2 = fig.add_subplot(232)
