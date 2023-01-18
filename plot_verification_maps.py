@@ -6,7 +6,6 @@ import argparse
 import numpy as np
 import regionmask
 import cartopy.crs as ccrs
-from scipy.spatial.distance import jensenshannon as js
 import xarray as xr
 import matplotlib.pyplot as plt
 
@@ -59,12 +58,14 @@ fill = fill.to_array().reindex(variable=varnames)
 #init_set = init.mean(dim='veriset')
 
 ## DEBUG
-#varname = 'soil_moisture'
+#varname = 'precipitation'
 #lat = -25
 #lon = 124
+#import IPython; IPython.embed()
 #for veriset in range(10):
 #    orig.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='black')
-#    intp_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='orange')
+#    intp.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='orange')
+#    fill.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='blue')
 #    #init_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').plot(color='red')
 #    #fill_set.sel(variable=varname).sel(lat=lat, lon=lon, method='nearest').plot(color='blue')
 #    #intp.sel(variable=varname, veriset=veriset).sel(lat=lat, lon=lon, method='nearest').fillna(0).plot(color='yellow')
@@ -116,11 +117,12 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
 
     # calculate skill score
     skillscore = 1 - (rmsefill/rmseintp)
-    skillscore = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time') #DEBUG
+    skillscore = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time') #DEBUG
     #skillscore = rmsefill # DEBUG
 
     # mask regions not included
     skillscore = skillscore.where(obsmask) # not obs dark grey
+    print(varname, skillscore.median().item())
     skillscore = skillscore.where(np.logical_not(landmask), -10) # ocean blue
 
     # plot
