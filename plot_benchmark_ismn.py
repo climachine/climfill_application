@@ -9,6 +9,7 @@ import cartopy.crs as ccrs
 from scipy.spatial.distance import jensenshannon as js
 import xarray as xr
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
@@ -32,15 +33,10 @@ mask = mask <= 15
 ismn = ismn.resample(time='MS').mean()
 ismn = ismn.where(mask)
 
-# take only ismn stations with more than 5 years of data
-#mask = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
-#mask = mask <= 12*5
-#ismn = ismn.where(~mask, drop=True)
-
-# (optional) calculate anomalies
-#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
-#ismn = ismn.groupby('time.month') - ismn.groupby('time.month').mean()
+# take only ismn stations with more than 2 years of data
+mask = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
+mask = mask >= 12*2
+ismn = ismn.where(mask, drop=True)
 
 # ismn to worldmap
 # easier: orig and fill to ismn shape
@@ -53,29 +49,48 @@ for i, (lat,lon) in enumerate(zip(ismn.lat.values, ismn.lon.values)):
 orig_ismn.to_netcdf(f'{esapath}data_orig_ismn.nc')
 fill_ismn.to_netcdf(f'{esapath}data_climfilled_ismn.nc')
 
-# normalise values for RMSE plotting
-#orig_ismn = (orig_ismn - orig_ismn.mean()) / orig_ismn.std()
-#fill_ismn = (fill_ismn - fill_ismn.mean()) / fill_ismn.std()
-#ismn = (ismn - ismn.mean()) / ismn.std()
-
 # get 3 stations with longest record
 tmp = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
 stations = tmp.sortby(tmp, ascending=False)[:3].stations
 # note: station outside US only at place 161 (Iberian Peninsula, Nr 1274)
 stations = [1777,1811,1274]
 
+# calculate correlation
+pcorr = xr.corr(ismn.mrso, orig_ismn.mrso, dim='time')
+
+# plot station locations
+proj = ccrs.Robinson()
+transf = ccrs.PlateCarree()
+levels = np.arange(-1,1.1,0.1)
+fig = plt.figure(figsize=(15,10))
+ax = fig.add_subplot(111, projection=proj)
+im= ax.scatter(pcorr.lon, pcorr.lat, c=pcorr, transform=transf, cmap='seismic_r',
+           vmin=-1, vmax=1, alpha=1, edgecolor=None)
+ax.scatter(pcorr.sel(stations=stations).lon, pcorr.sel(stations=stations).lat, 
+           edgecolors='red', c=pcorr.sel(stations=stations), transform=transf, 
+           cmap='seismic_r', vmin=-1, vmax=1)
+ax.set_global()
+ax.coastlines()
+cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
+cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
+cbar.set_label('Pearson correlation')
+ax.set_title('(d) Correlation between gap-filled ESA-CCI surface layer soil moisture with ISMN stations')
+plt.savefig('ismn_worldmap.png', dpi=300)
+plt.close()
+
+# plot distribution of correlations
+fig = plt.figure(figsize=(5,2))
+ax = fig.add_subplot(111)
+ax.bar(np.arange(len(pcorr)), pcorr.sortby(pcorr))
+ax.set_xlabel('stations')
+ax.set_ylabel('pearson correlation')
+ax.set_title('(e) Correlation between gap-filled ESA-CCI surface layer soil moisture with ISMN stations')
+plt.savefig('ismn_pdf.png', dpi=300)
+plt.close()
+
 #orig_stations = orig_ismn.sel(stations=stations).mrso
 #fill_stations = fill_ismn.sel(stations=stations).mrso
 #ismn_stations = ismn.sel(stations=stations).mrso
-
-# plot station locations
-#proj = ccrs.Robinson()
-#transf = ccrs.PlateCarree()
-#fig = plt.figure(figsize=(10,10))
-#ax = fig.add_subplot(111, projection=proj)
-#ax.scatter(ismn.mrso.sel(stations=stations).lon, ismn.mrso.sel(stations=stations).lat, c=tmp.sel(stations=stations), transform=transf)
-#ax.coastlines()
-#plt.show()
 
 # plot example station
 fig = plt.figure(figsize=(10,10))
@@ -99,9 +114,9 @@ fill_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_fill)
 orig_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_miss)
 ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn)
 
-ax1.set_title('Little River, SCAN Network, Georgia, USA')
-ax2.set_title('N Piedmont Arec, SCAN Network, Virginia, USA')
-ax3.set_title('Llanos de la Boveda, REMEDHUS Network, Spain')
+ax1.set_title('(a) Little River, SCAN Network, Georgia, USA')
+ax2.set_title('(b) N Piedmont Arec, SCAN Network, Virginia, USA')
+ax3.set_title('(c) Llanos de la Boveda, REMEDHUS Network, Spain')
 
 ax1.set_xticklabels([])
 ax2.set_xticklabels([])
@@ -118,4 +133,8 @@ ax3.set_ylabel('surface layer \nsoil moisture $m^{3}m^{-3}$')
 ax1.set_xlabel('')
 ax2.set_xlabel('')
 
+legend_elements = [Patch(facecolor=col_miss, edgecolor='black', label='With Gaps'),
+                   Patch(facecolor=col_fill, edgecolor='black', label='Gap-filled'),
+                   Patch(facecolor=col_ismn, edgecolor='black', label='ISMN station')]
+ax3.legend(handles=legend_elements, loc='upper left')
 plt.savefig('benchmark_ismn.pdf')
