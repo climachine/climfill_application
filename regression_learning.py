@@ -92,7 +92,7 @@ rf_kwargs = {'burned_area':              {'n_estimators': 300, # CVed now!
 for varname in varnames:
     rf_kwargs[varname]['bootstrap'] = True
     rf_kwargs[varname]['warm_start'] = False
-    rf_kwargs[varname]['n_jobs'] = 30
+    rf_kwargs[varname]['n_jobs'] = 35
 regr_dict = {varname: RandomForestRegressor(**rf_kwargs[varname]) for varname in varnames}
 verbose = 1
 maxiter = 20
