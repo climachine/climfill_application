@@ -26,21 +26,21 @@ cv_year = '2005'
 
 # read data cube
 print(f'{datetime.now()} read data...')
-data = xr.open_dataset(f'{esapath}data_orig.nc').to_array()
+data_all = xr.open_dataset(f'{esapath}data_orig.nc').to_array()
 landmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 
 # mask needs to be computed separately
-mask = np.isnan(data)
-mask = mask.where(landmask, np.nan) # is needed for calc of n_obs
+mask_all = np.isnan(data_all)
+mask_all = mask_all.where(landmask, np.nan) # is needed for calc of n_obs
 
 # get varnames
 #varnames =  list(data.keys()) # unsorted, but works on dataset
-varnames = list(data.coords['variable'].values)
+varnames = list(data_all.coords['variable'].values)
 varnames.remove('landcover')
 
 # select year
-mask = mask.sel(time=slice(vf_year,cv_year)).load()
-data = data.sel(time=slice(vf_year,cv_year)).load()
+mask = mask_all.sel(time=slice(vf_year,cv_year)).load().copy(deep=True)
+data = data_all.sel(time=slice(vf_year,cv_year)).load().copy(deep=True)
 
 # copy 10 times
 datasets = []
@@ -68,8 +68,13 @@ for varname in varnames:
 # save
 for d, dat in enumerate(datasets):
     mask = np.isnan(dat)
-    dat.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{d}/data_crossval.nc')
-    mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{d}/mask_crossval.nc')
+
+    # add other years again
+    mask_all.loc[dict(time=slice(vf_year,cv_year))] = mask
+    data_all.loc[dict(time=slice(vf_year,cv_year))] = dat
+
+    data_all.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{d}/data_crossval.nc')
+    mask_all.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{d}/mask_crossval.nc')
 
 # delete values for verification
 #for varname in varnames:
