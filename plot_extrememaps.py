@@ -17,7 +17,7 @@ args = parser.parse_args()
 testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
-location = 'Europe'
+location = 'California'
 
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
@@ -74,9 +74,9 @@ orig = orig.where(orig != 1, 10)
 fill = fill.where(fill != 1, 10)
 
 # plot pre 
-varnames_plot = ['burned area','2m temperature (in situ)','land surface temperature',
-                 'diurnal temperature \nrange','precipitation \n(ground)',
-                 'precipitation (satellite)','surface layer soil \nmoisture',
+varnames_plot = ['burned area','2m temperature \n(in-situ)','land surface \ntemperature',
+                 'diurnal temperature \nrange','precipitation \n(in-situ)',
+                 'precipitation \n(satellite)','surface layer soil \nmoisture',
                  'terrestrial water \nstorage'] 
 levels = np.arange(0,1.1,0.1)
 
@@ -155,6 +155,7 @@ for ax in (ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9,ax10,ax11,ax12,ax13,ax14,ax15,ax1
 
 ax1.set_title('With Gaps')
 ax2.set_title('Gap-Filled')
+ax1.text(0.5,1.4,f'{location}, {time}',transform=ax1.transAxes, va='center', fontsize=14)
 
 for varname, ax in zip(varnames_plot, (ax1,ax3,ax5,ax7,ax9,ax11,ax13,ax15)):
     ax.text(-1.1, 0.5,varname,transform=ax.transAxes, va='center')
