@@ -9,7 +9,7 @@ import cartopy.crs as ccrs
 from scipy.spatial.distance import jensenshannon as js
 import xarray as xr
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
+from matplotlib.lines import Line2D
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
@@ -18,6 +18,10 @@ testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 time = slice('1995','2020')
+
+col_fill = 'coral'
+col_miss = 'steelblue'
+col_ismn = 'olivedrab'
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc').soil_moisture
@@ -35,7 +39,7 @@ ismn = ismn.where(mask)
 
 # take only ismn stations with more than 2 years of data
 mask = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
-mask = mask >= 12*2
+mask = mask >= 12*5
 ismn = ismn.where(mask, drop=True)
 
 # ismn to worldmap
@@ -56,32 +60,54 @@ stations = tmp.sortby(tmp, ascending=False)[:3].stations
 stations = [1777,1811,1274]
 
 # calculate correlation
-pcorr = xr.corr(ismn.mrso, orig_ismn.mrso, dim='time')
+pcorr_orig = xr.corr(ismn.mrso, orig_ismn.mrso, dim='time')
+pcorr_fill = xr.corr(ismn.mrso, fill_ismn.mrso, dim='time')
 
 # plot station locations
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
 levels = np.arange(-1,1.1,0.1)
-fig = plt.figure(figsize=(15,10))
-ax = fig.add_subplot(111, projection=proj)
-im= ax.scatter(pcorr.lon, pcorr.lat, c=pcorr, transform=transf, cmap='seismic_r',
+fig = plt.figure(figsize=(10,10))
+ax1 = fig.add_subplot(211, projection=proj)
+ax2 = fig.add_subplot(212, projection=proj)
+fs = 15
+levels = np.arange(-1,1.1,0.1)
+
+im= ax1.scatter(pcorr_orig.lon, pcorr_orig.lat, c=pcorr_orig, transform=transf, cmap='seismic_r',
            vmin=-1, vmax=1, alpha=1, edgecolor=None)
-ax.scatter(pcorr.sel(stations=stations).lon, pcorr.sel(stations=stations).lat, 
-           edgecolors='red', c=pcorr.sel(stations=stations), transform=transf, 
+ax1.coastlines()
+ax1.scatter(pcorr_orig.sel(stations=stations).lon, pcorr_orig.sel(stations=stations).lat, 
+           edgecolors='red', c=pcorr_orig.sel(stations=stations), transform=transf, 
            cmap='seismic_r', vmin=-1, vmax=1)
-ax.set_global()
-ax.coastlines()
-cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
+
+im= ax2.scatter(pcorr_fill.lon, pcorr_fill.lat, c=pcorr_fill, transform=transf, cmap='seismic_r',
+           vmin=-1, vmax=1, alpha=1, edgecolor=None)
+ax2.coastlines()
+ax2.scatter(pcorr_fill.sel(stations=stations).lon, pcorr_fill.sel(stations=stations).lat, 
+           edgecolors='red', c=pcorr_fill.sel(stations=stations), transform=transf, 
+           cmap='seismic_r', vmin=-1, vmax=1)
+
+ax1.set_global()
+ax2.set_global()
+
+cbar_ax = fig.add_axes([0.88, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
-cbar.set_label('Pearson correlation')
-ax.set_title('(d) Correlation between gap-filled ESA-CCI surface layer soil moisture with ISMN stations')
+cbar.set_label('Pearson correlation', fontsize=fs)
+ax1.set_title('(a) original ESA-CCI surface layer soil moisture', fontsize=fs)
+ax2.set_title('(b) gap-filled ESA-CCI surface layer soil moisture', fontsize=fs)
+
+legend_elements = [Line2D([0],[0],marker='o', markeredgecolor='red', color='white', label='selected stations')]
+ax2.legend(handles=legend_elements, loc='upper right',
+          bbox_to_anchor=(1,0), fontsize=fs)
+
 plt.savefig('ismn_worldmap.png', dpi=300)
 plt.close()
 
 # plot distribution of correlations
 fig = plt.figure(figsize=(5,2))
 ax = fig.add_subplot(111)
-ax.bar(np.arange(len(pcorr)), pcorr.sortby(pcorr))
+ax.bar(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
+ax.bar(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
 ax.set_xlabel('stations')
 ax.set_ylabel('pearson correlation')
 ax.set_title('(e) Correlation between gap-filled ESA-CCI surface layer soil moisture with ISMN stations')
@@ -98,10 +124,6 @@ ax1 = fig.add_subplot(311)
 ax2 = fig.add_subplot(312)
 ax3 = fig.add_subplot(313)
 
-col_fill = 'coral'
-col_miss = 'steelblue'
-col_ismn = 'olivedrab'
-
 fill_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_fill)
 orig_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_miss)
 ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_ismn)
@@ -110,13 +132,13 @@ fill_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_fill)
 orig_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_miss)
 ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_ismn)
 
-fill_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_fill)
-orig_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_miss)
-ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn)
+fill_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_fill, label='Gap-filled ESA CCI')
+orig_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_miss, label='ESA CCI with Gaps')
+ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn, label='ISMN station')
 
-ax1.set_title('(a) Little River, SCAN Network, Georgia, USA')
-ax2.set_title('(b) N Piedmont Arec, SCAN Network, Virginia, USA')
-ax3.set_title('(c) Llanos de la Boveda, REMEDHUS Network, Spain')
+ax1.set_title('(c) Little River, SCAN Network, Georgia, USA')
+ax2.set_title('(d) N Piedmont Arec, SCAN Network, Virginia, USA')
+ax3.set_title('(e) Llanos de la Boveda, REMEDHUS Network, Spain')
 
 ax1.set_xticklabels([])
 ax2.set_xticklabels([])
@@ -133,8 +155,6 @@ ax3.set_ylabel('surface layer \nsoil moisture $m^{3}m^{-3}$')
 ax1.set_xlabel('')
 ax2.set_xlabel('')
 
-legend_elements = [Patch(facecolor=col_miss, edgecolor='black', label='With Gaps'),
-                   Patch(facecolor=col_fill, edgecolor='black', label='Gap-filled'),
-                   Patch(facecolor=col_ismn, edgecolor='black', label='ISMN station')]
-ax3.legend(handles=legend_elements, loc='upper left')
+ax3.legend(loc='upper left')
+
 plt.savefig('benchmark_ismn.pdf')
