@@ -54,5 +54,9 @@ data.loc['burned_area'] = data.loc['burned_area'].fillna(ba_init).squeeze()
 print(f'{datetime.now()} save initial guess...')
 if veriset is None:
     data.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/data_initguess.nc')
+    mask = np.isnan(data)
+    mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/mask_initguess.nc')
 else:
     data.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{veriset}/data_initguess.nc')
+    mask = np.isnan(data)
+    mask.to_dataset('variable').to_netcdf(f'{esapath}{testcase}/verification/set{veriset}/mask_initguess.nc')
