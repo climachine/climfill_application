@@ -18,6 +18,9 @@ testcase = args.testcase
 
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 
+# same cubes every time
+np.random.seed(0)
+
 # crossval settings
 frac_mis = 0.1 
 ncubes = 24 # needs to be >= nt
@@ -52,20 +55,31 @@ minicubes = create_minicubes(mask.sel(variable='soil_moisture').drop('variable')
                              ncubes)
 
 # divide cubes on land into ten roughly equally sized sets
+print(f'{datetime.now()} create and apply cubes...')
 cubes_on_land = np.unique(minicubes)
 cubes_on_land = cubes_on_land[~np.isnan(cubes_on_land)]
 
+cubes_save = []
 for varname in varnames:
 
     np.random.shuffle(cubes_on_land)
     random_sets = np.array_split(cubes_on_land, 10)
 
-    for dat, cubeset in zip(datasets, random_sets):
+    for d, (dat, cubeset) in enumerate(zip(datasets, random_sets)):
 
-        dat.loc[varname,:,:,:] = dat.loc[varname,:,:,:].where(np.logical_not(minicubes.isin(cubeset)))
-        print((np.isnan(dat).sum(dim=('lat','lon','time')) / np.isnan(dat).count(dim=('lat','lon','time'))).values)
+        cubemask = np.logical_not(minicubes.isin(cubeset))
+        dat.loc[varname,:,:,:] = dat.loc[varname,:,:,:].where(cubemask)
+        #print((np.isnan(dat).sum(dim=('lat','lon','time')) / np.isnan(dat).count(dim=('lat','lon','time'))).values)
+        cubemask = cubemask.expand_dims(veriset=[d])
+        cubemask = cubemask.rename(varname)
+        cubes_save.append(cubemask)
+
+print(f'{datetime.now()} merge...')
+cubes_save = xr.merge(cubes_save)
+cubes_save.to_netcdf(f'{esapath}{testcase}/verification/mask_cubes.nc')
 
 # save
+print(f'{datetime.now()} save...')
 for d, dat in enumerate(datasets):
     mask = np.isnan(dat)
 
