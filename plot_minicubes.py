@@ -64,7 +64,7 @@ data.plot(ax=ax, cmap=cmap, transform=transf, vmin=0, vmax=0.4, levels=levels,
 ax.set_facecolor('lightgrey')
 ax.set_title('ESA CCI surface layer soil moisture, Sept 2005')
 legend_elements = [Patch(facecolor='grey', edgecolor='grey', 
-                   label='verification points'),
+                   label='validation points'),
                    Patch(facecolor='lightgrey', edgecolor='lightgrey',
                    label='unobserved points')]
 ax.legend(handles=legend_elements, loc='upper right',
