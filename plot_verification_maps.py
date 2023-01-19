@@ -148,16 +148,13 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
     #rmsefill = calc_rmse(orig.sel(variable=varname), fill.sel(variable=varname), dim=('time'))
 
     ## calculate skill score
-    #skillscore = 1 - (rmsefill/rmseintp)
     skillscore = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time') #DEBUG
-    #skillscore = rmsefill # DEBUG
 
     # expand to worldmap
     skillscore = expand_to_worldmap(skillscore, regions)
 
     # mask regions not included
     skillscore = skillscore.where(obsmask) # not obs dark grey
-    print(varname, skillscore.median().item())
     skillscore = skillscore.where(np.logical_not(landmask), -10) # ocean blue
 
     # plot
