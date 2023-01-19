@@ -30,12 +30,28 @@ def calc_rmse(dat1, dat2, dim):
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
+mask_initguess = xr.open_dataset(f'{esapath}{testcase}/mask_initguess.nc')
+mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
+mask_cubes = xr.open_dataset(f'{esapath}{testcase}/verification/mask_cubes.nc')
 intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolated_del.nc')
 fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_del.nc')
+
+# select verification year
+orig = orig.sel(time=verification_year).load()
+
+# select only verification cubes
+mask_cubes = mask_cubes.sel(veriset=0) # DEBUG
+intp = intp.where(np.logical_not(mask_cubes))
+fill = fill.where(np.logical_not(mask_cubes))
+orig = orig.where(np.logical_not(mask_cubes))
 
 # average over all set
 intp = intp.mean(dim='veriset').load()
 fill = fill.mean(dim='veriset').load()
+
+# mask still missing after init guess
+intp = intp.where(np.logical_not(mask_initguess))
+fill = fill.where(np.logical_not(mask_initguess))
 
 # normalise values for RMSE plotting
 datamean = orig.mean()
@@ -43,9 +59,6 @@ datastd = orig.std()
 orig = (orig - datamean) / datastd
 intp = (intp - datamean) / datastd
 fill = (fill - datamean) / datastd
-
-# select verification year
-orig = orig.sel(time=verification_year).load()
 
 # sort data
 varnames_plot = ['SM','LST','PSAT', #for order of plots
@@ -70,6 +83,23 @@ orig_anom = orig.groupby('time.month') - orig.groupby('time.month').mean()
 intp_anom = intp.groupby('time.month') - intp.groupby('time.month').mean()
 fill_anom = fill.groupby('time.month') - fill.groupby('time.month').mean()
 
+# now here: regional averages such that init guess is included
+landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
+regions = regionmask.defined_regions.ar6.land.mask(orig.lon, orig.lat)
+regions = regions.where(~np.isnan(landmask))
+
+orig = orig.groupby(regions).mean()
+intp = intp.groupby(regions).mean()
+fill = fill.groupby(regions).mean()
+
+orig_anom = orig_anom.groupby(regions).mean()
+intp_anom = intp_anom.groupby(regions).mean()
+fill_anom = fill_anom.groupby(regions).mean()
+
+orig_seas = orig_seas.groupby(regions).mean()
+intp_seas = intp_seas.groupby(regions).mean()
+fill_seas = fill_seas.groupby(regions).mean()
+
 # calc metrics
 corr_intp = xr.corr(orig, intp, dim=('time'))
 corr_fill = xr.corr(orig, fill, dim=('time'))
@@ -87,31 +117,31 @@ rmse_intp_seas = calc_rmse(orig_seas, intp_seas, dim=('month'))
 rmse_fill_seas = calc_rmse(orig_seas, fill_seas, dim=('month'))
 
 # remove from corr all timepoints with less than 3 missing vals (bec will be corr 1)
-corrmask = (np.logical_not(np.isnan(fill)).sum(dim='time') > 3).reindex(variable=varnames)
-corr_intp = corr_intp.where(corrmask)
-corr_fill = corr_fill.where(corrmask)
-
-corr_intp_anom = corr_intp_anom.where(corrmask)
-corr_fill_anom = corr_fill_anom.where(corrmask)
-
-corr_intp_seas = corr_intp_seas.where(corrmask)
-corr_fill_seas = corr_fill_seas.where(corrmask)
+#corrmask = (np.logical_not(np.isnan(fill)).sum(dim='time') > 3).reindex(variable=varnames)
+#corr_intp = corr_intp.where(corrmask)
+#corr_fill = corr_fill.where(corrmask)
+#
+#corr_intp_anom = corr_intp_anom.where(corrmask)
+#corr_fill_anom = corr_fill_anom.where(corrmask)
+#
+#corr_intp_seas = corr_intp_seas.where(corrmask)
+#corr_fill_seas = corr_fill_seas.where(corrmask)
 
 # aggregate lat lon for boxplot
-corr_intp = corr_intp.stack(landpoints=('lat','lon'))
-corr_fill = corr_fill.stack(landpoints=('lat','lon'))
-rmse_intp = rmse_intp.stack(landpoints=('lat','lon'))
-rmse_fill = rmse_fill.stack(landpoints=('lat','lon'))
-
-corr_intp_anom = corr_intp_anom.stack(landpoints=('lat','lon'))
-corr_fill_anom = corr_fill_anom.stack(landpoints=('lat','lon'))
-rmse_intp_anom = rmse_intp_anom.stack(landpoints=('lat','lon'))
-rmse_fill_anom = rmse_fill_anom.stack(landpoints=('lat','lon'))
-
-corr_intp_seas = corr_intp_seas.stack(landpoints=('lat','lon'))
-corr_fill_seas = corr_fill_seas.stack(landpoints=('lat','lon'))
-rmse_intp_seas = rmse_intp_seas.stack(landpoints=('lat','lon'))
-rmse_fill_seas = rmse_fill_seas.stack(landpoints=('lat','lon'))
+#corr_intp = corr_intp.stack(landpoints=('lat','lon'))
+#corr_fill = corr_fill.stack(landpoints=('lat','lon'))
+#rmse_intp = rmse_intp.stack(landpoints=('lat','lon'))
+#rmse_fill = rmse_fill.stack(landpoints=('lat','lon'))
+#
+#corr_intp_anom = corr_intp_anom.stack(landpoints=('lat','lon'))
+#corr_fill_anom = corr_fill_anom.stack(landpoints=('lat','lon'))
+#rmse_intp_anom = rmse_intp_anom.stack(landpoints=('lat','lon'))
+#rmse_fill_anom = rmse_fill_anom.stack(landpoints=('lat','lon'))
+#
+#corr_intp_seas = corr_intp_seas.stack(landpoints=('lat','lon'))
+#corr_fill_seas = corr_fill_seas.stack(landpoints=('lat','lon'))
+#rmse_intp_seas = rmse_intp_seas.stack(landpoints=('lat','lon'))
+#rmse_fill_seas = rmse_fill_seas.stack(landpoints=('lat','lon'))
 
 # remove nan for boxplot
 def filter_data(data):
@@ -157,7 +187,6 @@ b2 = ax1.boxplot(positions=x_pos+wd, x=corr_fill, showfliers=False, **boxplot_kw
 
 b3 = ax2.boxplot(positions=x_pos, x=corr_intp_anom, showfliers=False, **boxplot_kwargs)
 b4 = ax2.boxplot(positions=x_pos+wd, x=corr_fill_anom, showfliers=False, **boxplot_kwargs)
-import IPython; IPython.embed()
 
 b5 = ax3.boxplot(positions=x_pos, x=corr_intp_seas, showfliers=False, **boxplot_kwargs)
 b6 = ax3.boxplot(positions=x_pos+wd, x=corr_fill_seas, showfliers=False, **boxplot_kwargs)
