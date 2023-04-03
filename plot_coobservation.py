@@ -46,6 +46,7 @@ levels = np.arange(10)
 
 fig = plt.figure(figsize=(10,5))
 ax = fig.add_subplot(111, projection=proj)
-mask.plot(cmap=cmap, levels=levels, transform=transf)
+mask.plot(cmap=cmap, levels=levels, transform=transf,
+         cbar_kwargs={'label': '# of observations'})
 ax.set_title('Average number of available co-occurring variables')
 plt.savefig('coobs.png', dpi=300)
