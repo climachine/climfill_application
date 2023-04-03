@@ -18,7 +18,7 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','temperature_obs','precipitation_obs',
             'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
-label = 'climfilled'
+label = 'interpolated'
 #mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
 
 fill = xr.open_dataset(f'{esapath}{testcase}/verification/set{veriset}/data_{label}.nc')
