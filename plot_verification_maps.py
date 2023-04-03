@@ -36,10 +36,13 @@ fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled
 orig = orig.sel(time=verification_year).load()
 
 # select only verification cubes
-mask_cubes = mask_cubes.sel(veriset=0) # DEBUG
+#mask_cubes = mask_cubes.sel(veriset=0) # DEBUG
+intp = intp.assign_coords(veriset=np.arange(10)) # int not str
+fill = fill.assign_coords(veriset=np.arange(10))
+
 intp = intp.where(np.logical_not(mask_cubes))
 fill = fill.where(np.logical_not(mask_cubes))
-orig = orig.where(np.logical_not(mask_cubes))
+#orig = orig.where(np.logical_not(mask_cubes))
 
 # average over all set
 intp = intp.mean(dim='veriset').load()
@@ -148,7 +151,7 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
     #rmsefill = calc_rmse(orig.sel(variable=varname), fill.sel(variable=varname), dim=('time'))
 
     ## calculate skill score
-    skillscore = xr.corr(orig.sel(variable=varname),intp.sel(variable=varname), dim='time') #DEBUG
+    skillscore = xr.corr(orig.sel(variable=varname),fill.sel(variable=varname), dim='time') #DEBUG
 
     # expand to worldmap
     skillscore = expand_to_worldmap(skillscore, regions)
