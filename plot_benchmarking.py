@@ -165,7 +165,7 @@ ax2.set_xlim([-1,14])
 
 ax1.set_ylabel('Pearson correlation coefficient', fontsize=fs)
 ax2.set_ylabel('RMSE on normalized values', fontsize=fs)
-fig.suptitle('(b) Benchmarking scores', fontsize=20)
+fig.suptitle('(a) Benchmarking scores', fontsize=20)
 
 ax2.set_xticklabels(varnames_plot, fontsize=fs)
 
