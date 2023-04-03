@@ -32,7 +32,7 @@ def calc_rmse(dat1, dat2, dim):
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 mask_initguess = xr.open_dataset(f'{esapath}{testcase}/mask_initguess.nc')
 mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
-mask_cubes = xr.open_dataset(f'{esapath}{testcase}/verification/mask_cubes.nc')
+#mask_cubes = xr.open_dataset(f'{esapath}{testcase}/verification/mask_cubes.nc')
 intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolated_del.nc')
 fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_del.nc')
 
@@ -40,10 +40,13 @@ fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled
 orig = orig.sel(time=verification_year).load()
 
 # select only verification cubes
-mask_cubes = mask_cubes.sel(veriset=0) # DEBUG
+#mask_cubes = mask_cubes.sel(veriset=0) # DEBUG
+intp = intp.assign_coords(veriset=np.arange(10)) # int not str
+fill = fill.assign_coords(veriset=np.arange(10))
+
 intp = intp.where(np.logical_not(mask_cubes))
 fill = fill.where(np.logical_not(mask_cubes))
-orig = orig.where(np.logical_not(mask_cubes))
+#orig = orig.where(np.logical_not(mask_cubes))
 
 # average over all set
 intp = intp.mean(dim='veriset').load()
@@ -213,7 +216,7 @@ ax1.set_xticks([])
 ax2.set_xticks([])
 ax3.set_xticks([])
 
-legend_elements = [Patch(facecolor=col_intp, edgecolor='black', label='Interpolation'),
+legend_elements = [Patch(facecolor=col_intp, edgecolor='black', label='Initial guess'),
                    Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL')]
 
 ax6.legend(handles=legend_elements, loc='upper right', fontsize=fs)
@@ -226,12 +229,16 @@ ax1.set_ylim([-0.5,1.1])
 ax2.set_ylim([-0.5,1.1]) 
 ax3.set_ylim([-0.5,1.1]) 
 
-ax4.set_ylim([-0.0,0.9]) 
-ax5.set_ylim([-0.0,0.9]) 
-ax6.set_ylim([-0.0,0.9]) 
+ax4.set_ylim([-0.0,1.2]) 
+ax5.set_ylim([-0.0,1.2]) 
+ax6.set_ylim([-0.0,1.2]) 
 
 ax1.set_xlim([-1,18])
 ax2.set_xlim([-1,18])
+ax3.set_xlim([-1,18])
+ax4.set_xlim([-1,18])
+ax5.set_xlim([-1,18])
+ax6.set_xlim([-1,18])
 
 #ax1.set_title('Pearson correlation coefficient')
 #ax2.set_title('Pearson correlation coefficient')
