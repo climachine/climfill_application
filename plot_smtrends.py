@@ -95,16 +95,16 @@ erag = erag.weighted(area_weighted(erag.lat)).mean(dim=('lat','lon'))
 #fill_mean = fill.sel(time=slice('2007','2018')).mean(dim='time')
 #era5_mean = era5.sel(time=slice('2007','2018')).mean(dim='time')
 #erag_mean = erag.sel(time=slice('2007','2018')).mean(dim='time')
-#orig_mean = orig.mean(dim='time')
-#fill_mean = fill.mean(dim='time')
-#era5_mean = era5.mean(dim='time')
-#erag_mean = erag.mean(dim='time')
+orig_mean = orig.mean(dim='time')
+fill_mean = fill.mean(dim='time')
+era5_mean = era5.mean(dim='time')
+erag_mean = erag.mean(dim='time')
 ##
 ##import IPython; IPython.embed()
-#orig = orig - orig_mean
-#fill = fill - fill_mean
-#era5 = era5 - era5_mean
-#erag = erag - erag_mean
+orig = orig - orig_mean
+fill = fill - fill_mean
+era5 = era5 - era5_mean
+erag = erag - erag_mean
 
 
 # scale by 100 to get values less close to zero
@@ -113,20 +113,21 @@ erag = erag.weighted(area_weighted(erag.lat)).mean(dim=('lat','lon'))
 #era5 = era5*100
 #erag = erag*100
 
-col_fill = 'coral'
-col_miss = 'steelblue'
-col_ismn = 'olivedrab'
-col_erag = 'darkviolet'
+col_fill = 'darkgrey'
+col_miss = 'indianred'
+col_ismn = 'black'
+col_erag = 'black'
 
 # plot
-fig = plt.figure(figsize=(11,8))
+fig = plt.figure(figsize=(11,4))
 ax = fig.add_subplot(111)
 im = orig.plot(ax=ax, color=col_fill, label='ESA CCI original')
 fill.plot(ax=ax, color=col_miss, label='ESA CCI gap-filled')
 era5.plot(ax=ax, color=col_ismn, label='ERA5-Land original')
-erag.plot(ax=ax, color=col_erag, label='ERA5-Land gaps deleted')
-ax.set_ylabel('surface layer soil moisture $[m^{3}\;m^{-3}]$', fontsize=fs)
+erag.plot(ax=ax, color=col_erag, label='satellite-observable ERA5-Land', linestyle='--')
+ax.set_ylabel('surface layer soil moisture, \ndeviations from 1996-2020 \naverage $[m^{3}\;m^{-3}]$', fontsize=fs)
 ax.set_xlabel('time', fontsize=fs)
 fig.suptitle('(b) Northern Extratropics', fontsize=fs)
 ax.legend(fontsize=fs, loc='lower right')
-plt.savefig('sm_extratropics.pdf')
+ax.set_ylim([-0.02,0.015])
+plt.savefig('sm_test3.pdf')
