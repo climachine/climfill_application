@@ -20,11 +20,13 @@ esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 time = slice('1995','2020')
 
 col_fill = 'coral'
-col_miss = 'steelblue'
+col_miss = 'darkgrey'
 col_ismn = 'olivedrab'
+col_intp =  'steelblue'
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc').soil_moisture
+intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').soil_moisture
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc').soil_moisture
 ismn = xr.open_dataset('/net/so4/landclim/bverena/large_files/df_gaps.nc')
 
@@ -45,12 +47,15 @@ ismn = ismn.where(mask, drop=True)
 # ismn to worldmap
 # easier: orig and fill to ismn shape
 orig_ismn = xr.full_like(ismn, np.nan)
+intp_ismn = xr.full_like(ismn, np.nan)
 fill_ismn = xr.full_like(ismn, np.nan)
 
 for i, (lat,lon) in enumerate(zip(ismn.lat.values, ismn.lon.values)):
     orig_ismn.mrso[:,i] = orig.sel(lat=lat, lon=lon, method='nearest')
+    intp_ismn.mrso[:,i] = intp.sel(lat=lat, lon=lon, method='nearest')
     fill_ismn.mrso[:,i] = fill.sel(lat=lat, lon=lon, method='nearest')
 orig_ismn.to_netcdf(f'{esapath}data_orig_ismn.nc')
+intp_ismn.to_netcdf(f'{esapath}data_intp_ismn.nc')
 fill_ismn.to_netcdf(f'{esapath}data_climfilled_ismn.nc')
 
 # get 3 stations with longest record
@@ -124,17 +129,20 @@ ax1 = fig.add_subplot(311)
 ax2 = fig.add_subplot(312)
 ax3 = fig.add_subplot(313)
 
-fill_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_fill)
-orig_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_miss)
-ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_ismn)
+intp_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_intp, label='Interpolated ESA CCI')
+fill_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_fill, label='Gap-filled ESA CCI')
+orig_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_miss, label='ESA CCI with Gaps')
+ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_ismn, label='ISMN station')
 
+intp_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_intp)
 fill_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_fill)
 orig_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_miss)
 ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_ismn)
 
-fill_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_fill, label='Gap-filled ESA CCI')
-orig_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_miss, label='ESA CCI with Gaps')
-ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn, label='ISMN station')
+intp_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_intp)
+fill_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_fill)
+orig_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_miss)
+ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn)
 
 ax1.set_title('(c) Little River, SCAN Network, Georgia, USA')
 ax2.set_title('(d) N Piedmont Arec, SCAN Network, Virginia, USA')
@@ -155,6 +163,6 @@ ax3.set_ylabel('surface layer \nsoil moisture $m^{3}m^{-3}$')
 ax1.set_xlabel('')
 ax2.set_xlabel('')
 
-ax3.legend(loc='upper left')
+ax1.legend(loc='lower left')
 
 plt.savefig('benchmark_ismn.pdf')
