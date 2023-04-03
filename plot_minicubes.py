@@ -9,7 +9,7 @@ import argparse
 
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
+from matplotlib.patches import Patch, Rectangle
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
@@ -60,6 +60,19 @@ fig = plt.figure(figsize=(10,5))
 ax = fig.add_subplot(111, projection=proj)
 data.plot(ax=ax, cmap=cmap, transform=transf, vmin=0, vmax=0.4, levels=levels,
           cbar_kwargs=cbar_kwargs)
+ax.add_patch(Rectangle((-109,45),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((-127,36),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((-163,63),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((-109,63),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((-19,36),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((-19,45),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((-1,-18),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((-1,-18),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((35,-27),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((125,-18),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((143,63),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((107,72),18,9, facecolor='none', edgecolor='black', transform=transf))
+ax.add_patch(Rectangle((89,54),18,9, facecolor='none', edgecolor='black', transform=transf))
 #icedesert.plot(ax=ax, hatch='\\', add_colorbar=False) #https://github.com/matplotlib/matplotlib/issues/3058
 ax.set_facecolor('lightgrey')
 ax.set_title('ESA CCI surface layer soil moisture, Sept 2005')
