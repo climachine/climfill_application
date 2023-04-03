@@ -130,6 +130,6 @@ for ax, varname in zip(axes, varnames_plot):
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
 cbar.set_label('Pearson correlation coefficient', fontsize=fs)
-fig.suptitle('(a) Pearson correlation coefficient on anomalies', fontsize=20)
+fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
 
 plt.savefig('benchmarking_maps.png')
