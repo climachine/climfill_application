@@ -127,7 +127,8 @@ varnames_plot = ['SM','LST','PSAT', #for order of plots
 #varnames_plot = ['surface layer \n soil moisture','land surface temperature',
 #                 'precipitation \n(satellite)', 
 for v, (varname, ax) in enumerate(zip(varnames, (ax1,ax2,ax3,ax7,ax8,ax9,ax13,ax14,ax15))):
-    frac = np.around(frac_mis[varname].item()*100, decimals=2)
+    #frac = np.around(frac_mis[varname].item()*100, decimals=0)
+    frac = round(frac_mis[varname].item()*100)
     ax.set_title(f'{varnames_plot[v]}: {frac}% missing')
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.7]) # left bottom width height
@@ -174,4 +175,4 @@ ax16.set_facecolor('lightgrey')
 ax17.set_facecolor('lightgrey')
 ax18.set_facecolor('lightgrey')
 #plt.show()
-plt.savefig('frac_missing.png', dpi=300)
+plt.savefig('frac_missing.png', dpi=300, bbox_inches='tight')
