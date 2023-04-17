@@ -1,12 +1,11 @@
 """
-initial gapfill
+interpolation
 """
 
 import numpy as np
 import xarray as xr
 import argparse
 from datetime import datetime
-from climfill.interpolation import gapfill_thin_plate_spline, gapfill_kriging
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
