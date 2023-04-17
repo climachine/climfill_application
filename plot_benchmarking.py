@@ -156,7 +156,8 @@ for box in b2['boxes'] + b4['boxes']:
 for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
     median.set_color('black')
 
-ax1.set_xticks([])
+#ax1.set_xticks([])
+ax1.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax1.set_ylim([0,1]) 
 ax2.set_ylim([0,1.4]) 
@@ -167,6 +168,7 @@ ax1.set_ylabel('Pearson correlation coefficient', fontsize=fs)
 ax2.set_ylabel('RMSE on normalized values', fontsize=fs)
 fig.suptitle('(a) Benchmarking scores', fontsize=20)
 
+ax1.set_xticklabels(varnames_plot, fontsize=fs)
 ax2.set_xticklabels(varnames_plot, fontsize=fs)
 
 legend_elements = [Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL'),
