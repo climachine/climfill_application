@@ -26,8 +26,8 @@ col_intp =  'steelblue'
 
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc').soil_moisture
-intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').soil_moisture
-fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc').soil_moisture
+#intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').soil_moisture
+#fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc').soil_moisture
 ismn = xr.open_dataset('/net/so4/landclim/bverena/large_files/df_gaps.nc')
 
 # select esa time period
@@ -44,29 +44,42 @@ mask = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
 mask = mask >= 12*5
 ismn = ismn.where(mask, drop=True)
 
-# ismn to worldmap
-# easier: orig and fill to ismn shape
-orig_ismn = xr.full_like(ismn, np.nan)
-intp_ismn = xr.full_like(ismn, np.nan)
-fill_ismn = xr.full_like(ismn, np.nan)
-
-for i, (lat,lon) in enumerate(zip(ismn.lat.values, ismn.lon.values)):
-    orig_ismn.mrso[:,i] = orig.sel(lat=lat, lon=lon, method='nearest')
-    intp_ismn.mrso[:,i] = intp.sel(lat=lat, lon=lon, method='nearest')
-    fill_ismn.mrso[:,i] = fill.sel(lat=lat, lon=lon, method='nearest')
-orig_ismn.to_netcdf(f'{esapath}data_orig_ismn.nc')
-intp_ismn.to_netcdf(f'{esapath}data_intp_ismn.nc')
-fill_ismn.to_netcdf(f'{esapath}data_climfilled_ismn.nc')
+## ismn to worldmap
+## easier: orig and fill to ismn shape
+#orig_ismn = xr.full_like(ismn, np.nan)
+#intp_ismn = xr.full_like(ismn, np.nan)
+#fill_ismn = xr.full_like(ismn, np.nan)
+#
+#for i, (lat,lon) in enumerate(zip(ismn.lat.values, ismn.lon.values)):
+#    orig_ismn.mrso[:,i] = orig.sel(lat=lat, lon=lon, method='nearest')
+#    intp_ismn.mrso[:,i] = intp.sel(lat=lat, lon=lon, method='nearest')
+#    fill_ismn.mrso[:,i] = fill.sel(lat=lat, lon=lon, method='nearest')
+#orig_ismn.to_netcdf(f'{esapath}data_orig_ismn.nc')
+#intp_ismn.to_netcdf(f'{esapath}data_intp_ismn.nc')
+#fill_ismn.to_netcdf(f'{esapath}data_climfilled_ismn.nc')
+orig_ismn = xr.open_dataarray(f'{esapath}data_orig_ismn.nc')
+intp_ismn = xr.open_dataarray(f'{esapath}data_intp_ismn.nc')
+fill_ismn = xr.open_dataarray(f'{esapath}data_climfilled_ismn.nc')
+ismn = ismn.mrso
 
 # get 3 stations with longest record
-tmp = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
+tmp = np.logical_not(np.isnan(ismn)).sum(dim='time')
 stations = tmp.sortby(tmp, ascending=False)[:3].stations
 # note: station outside US only at place 161 (Iberian Peninsula, Nr 1274)
 stations = [1777,1811,1274]
 
+# extract anomaly
+#fill_ismn = fill_ismn.groupby('time.month') - fill_ismn.groupby('time.month').mean()
+#intp_ismn = intp_ismn.groupby('time.month') - intp_ismn.groupby('time.month').mean()
+#orig_ismn = orig_ismn.groupby('time.month') - orig_ismn.groupby('time.month').mean()
+#ismn = ismn.groupby('time.month') - ismn.groupby('time.month').mean()
+
+# get only gap-filled data for gap-filled dataset
+fill_ismn_del = fill_ismn.where(np.isnan(orig_ismn))
+
 # calculate correlation
-pcorr_orig = xr.corr(ismn.mrso, orig_ismn.mrso, dim='time')
-pcorr_fill = xr.corr(ismn.mrso, fill_ismn.mrso, dim='time')
+pcorr_orig = xr.corr(ismn, orig_ismn, dim='time')
+pcorr_fill = xr.corr(ismn, fill_ismn_del, dim='time')
 
 # plot station locations
 proj = ccrs.Robinson()
@@ -78,19 +91,24 @@ ax2 = fig.add_subplot(212, projection=proj)
 fs = 15
 levels = np.arange(-1,1.1,0.1)
 
+cmap = plt.get_cmap('Greys')
+landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
+
+#landmask.plot(ax=ax1, cmap=cmap, add_colorbar=False)
+
 im= ax1.scatter(pcorr_orig.lon, pcorr_orig.lat, c=pcorr_orig, transform=transf, cmap='seismic_r',
-           vmin=-1, vmax=1, alpha=1, edgecolor=None)
+           vmin=-1, vmax=1, alpha=1, edgecolor='white', s=40)
 ax1.coastlines()
 ax1.scatter(pcorr_orig.sel(stations=stations).lon, pcorr_orig.sel(stations=stations).lat, 
-           edgecolors='red', c=pcorr_orig.sel(stations=stations), transform=transf, 
-           cmap='seismic_r', vmin=-1, vmax=1)
+           marker='x', c='red', transform=transf)
 
+#im= ax2.scatter(pcorr_fill.lon, pcorr_fill.lat, c=pcorr_fill, transform=transf, cmap='seismic_r',
+#           vmin=-1, vmax=1, alpha=1, edgecolor=None)
 im= ax2.scatter(pcorr_fill.lon, pcorr_fill.lat, c=pcorr_fill, transform=transf, cmap='seismic_r',
-           vmin=-1, vmax=1, alpha=1, edgecolor=None)
+           vmin=-1, vmax=1, alpha=1, edgecolor='white', s=40)
 ax2.coastlines()
 ax2.scatter(pcorr_fill.sel(stations=stations).lon, pcorr_fill.sel(stations=stations).lat, 
-           edgecolors='red', c=pcorr_fill.sel(stations=stations), transform=transf, 
-           cmap='seismic_r', vmin=-1, vmax=1)
+           c='red', transform=transf, marker='x')
 
 ax1.set_global()
 ax2.set_global()
@@ -101,7 +119,7 @@ cbar.set_label('Pearson correlation', fontsize=fs)
 ax1.set_title('(a) original ESA-CCI surface layer soil moisture', fontsize=fs)
 ax2.set_title('(b) gap-filled ESA-CCI surface layer soil moisture', fontsize=fs)
 
-legend_elements = [Line2D([0],[0],marker='o', markeredgecolor='red', color='white', label='selected stations')]
+legend_elements = [Line2D([0],[0],marker='x', color='white', markeredgecolor='red', label='selected stations')]
 ax2.legend(handles=legend_elements, loc='upper right',
           bbox_to_anchor=(1,0), fontsize=fs)
 
@@ -109,13 +127,19 @@ plt.savefig('ismn_worldmap.png', dpi=300)
 plt.close()
 
 # plot distribution of correlations
-fig = plt.figure(figsize=(5,2))
+fig = plt.figure(figsize=(10,4))
 ax = fig.add_subplot(111)
-ax.bar(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
-ax.bar(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
+#ax.bar(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
+#ax.bar(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
+ax.plot(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
+ax.plot(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
+ax.grid()
 ax.set_xlabel('stations')
 ax.set_ylabel('pearson correlation')
-ax.set_title('(e) Correlation between gap-filled ESA-CCI surface layer soil moisture with ISMN stations')
+ax.set_title('(f) cumulative histogram of station correlations', fontsize=fs)
+legend_elements = [Line2D([0], [0], color=col_miss, lw=4, label='original ESA-CCI'),
+                   Line2D([0], [0], color=col_fill, lw=4, label='gap-filled ESA-CCI')]
+ax.legend(handles=legend_elements)
 plt.savefig('ismn_pdf.png', dpi=300)
 plt.close()
 
@@ -129,20 +153,20 @@ ax1 = fig.add_subplot(311)
 ax2 = fig.add_subplot(312)
 ax3 = fig.add_subplot(313)
 
-intp_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_intp, label='Interpolated ESA CCI')
-fill_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_fill, label='Gap-filled ESA CCI')
-orig_ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_miss, label='ESA CCI with Gaps')
-ismn.mrso.sel(stations=stations[0]).plot(ax=ax1, color=col_ismn, label='ISMN station')
+#intp_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_intp, label='Interpolated ESA CCI')
+fill_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_fill, label='Gap-filled ESA CCI')
+orig_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_miss, label='ESA CCI with Gaps')
+ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_ismn, label='ISMN station')
 
-intp_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_intp)
-fill_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_fill)
-orig_ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_miss)
-ismn.mrso.sel(stations=stations[1]).plot(ax=ax2, color=col_ismn)
+intp_ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_intp)
+fill_ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_fill)
+orig_ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_miss)
+ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_ismn)
 
-intp_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_intp)
-fill_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_fill)
-orig_ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_miss)
-ismn.mrso.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn)
+intp_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_intp)
+fill_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_fill)
+orig_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_miss)
+ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn)
 
 ax1.set_title('(c) Little River, SCAN Network, Georgia, USA')
 ax2.set_title('(d) N Piedmont Arec, SCAN Network, Virginia, USA')
