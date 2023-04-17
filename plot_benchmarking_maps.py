@@ -80,6 +80,7 @@ ax7 = fig.add_subplot(337, projection=proj)
 ax8 = fig.add_subplot(338, projection=proj)
 ax9 = fig.add_subplot(339, projection=proj)
 levels = np.arange(-1,1.1,0.1)
+levels = np.arange(-1.05,1.15,0.1) # colorscale go through white
 fs = 15
 
 cmap = plt.get_cmap('seismic_r')
