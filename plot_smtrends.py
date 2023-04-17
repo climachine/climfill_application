@@ -46,10 +46,40 @@ era5 = era5.resample(time='Y').mean()
 erag = erag.resample(time='Y').mean()
 
 # calculate trends per grid point
-era5_trends = era5.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)
-erag_trends = erag.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)
-orig_trends = orig.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)
-fill_trends = fill.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)
+ms_to_year = 365 * 24 * 3600 * 10**9
+era5_trends = era5.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)*ms_to_year
+erag_trends = erag.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)*ms_to_year
+orig_trends = orig.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)*ms_to_year
+fill_trends = fill.polyfit(dim='time', deg=1, skipna=True).polyfit_coefficients.sel(degree=1)*ms_to_year
+
+# aggregate by region
+landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
+#regions = regionmask.defined_regions.ar6.land.mask(orig.lon, orig.lat)
+#regions = regions.where(~np.isnan(landmask))
+#
+#era5_trends = era5_trends.groupby(regions).mean()
+#erag_trends = erag_trends.groupby(regions).mean()
+#orig_trends = orig_trends.groupby(regions).mean()
+#fill_trends = fill_trends.groupby(regions).mean()
+#
+## expand back to worldmap
+#def expand_to_worldmap(data,regions):
+#    test = xr.full_like(regions, np.nan)
+#    for region, r in zip(range(int(regions.max().item())), data):
+#        test = test.where(regions != region, r) # unit stations per bio square km
+#
+#    return test
+#
+#era5_trends = expand_to_worldmap(era5_trends,regions)
+#erag_trends = expand_to_worldmap(erag_trends,regions)
+#orig_trends = expand_to_worldmap(orig_trends,regions)
+#fill_trends = expand_to_worldmap(fill_trends,regions)
+
+# set ocean blue, land grey
+era5_trends = era5_trends.where(np.logical_not(landmask), 10) # ocean blue
+erag_trends = erag_trends.where(np.logical_not(landmask), 10) # ocean blue
+orig_trends = orig_trends.where(np.logical_not(landmask), 10) # ocean blue
+fill_trends = fill_trends.where(np.logical_not(landmask), 10) # ocean blue
 
 # plot map
 proj = ccrs.Robinson()
@@ -60,24 +90,45 @@ ax2 = fig.add_subplot(222, projection=proj)
 ax3 = fig.add_subplot(223, projection=proj)
 ax4 = fig.add_subplot(224, projection=proj)
 fs = 15
+levels = 9
 
-vmin= -1e-19
-vmax = 1e-19
-im = orig_trends.plot(ax=ax1, add_colorbar=False, vmin=vmin, vmax=vmax, cmap='coolwarm_r', transform=transf)
-erag_trends.plot(ax=ax2, add_colorbar=False, vmin=vmin, vmax=vmax, cmap='coolwarm_r', transform=transf)
-fill_trends.plot(ax=ax3, add_colorbar=False, vmin=vmin, vmax=vmax, cmap='coolwarm_r', transform=transf)
-era5_trends.plot(ax=ax4, add_colorbar=False, vmin=vmin, vmax=vmax, cmap='coolwarm_r', transform=transf)
+cmap = plt.get_cmap('seismic_r')
+cmap.set_over('aliceblue')
+cmap.set_bad('lightgrey')
 
-cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
+vmin= -0.002
+vmax = 0.002
+im = orig_trends.plot(ax=ax1, add_colorbar=False, vmin=vmin, vmax=vmax, cmap=cmap, transform=transf, levels=levels)
+erag_trends.plot(ax=ax2, add_colorbar=False, vmin=vmin, vmax=vmax, cmap=cmap, transform=transf, levels=levels)
+fill_trends.plot(ax=ax3, add_colorbar=False, vmin=vmin, vmax=vmax, cmap=cmap, transform=transf, levels=levels)
+era5_trends.plot(ax=ax4, add_colorbar=False, vmin=vmin, vmax=vmax, cmap=cmap, transform=transf, levels=levels)
+
+#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
+#                                             ax=ax1, add_label=False, projection=transf)
+#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
+#                                             ax=ax2, add_label=False, projection=transf)
+#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
+#                                             ax=ax3, add_label=False, projection=transf)
+#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
+#                                             ax=ax4, add_label=False, projection=transf)
+
+cbar_ax = fig.add_axes([0.91, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
-cbar.set_label('RMSE on normalized values', fontsize=fs)
+cbar.set_label('Surface layer soil moisture trends [$m^3\;m^{-3}$ per year]', fontsize=fs)
 fig.suptitle('(a) Soil moisture trends, 1996-2020', fontsize=20)
+
+#ax1.coastlines()
+#ax2.coastlines()
+#ax3.coastlines()
+#ax4.coastlines()
 
 ax1.set_title('ESA CCI original', fontsize=fs)
 ax2.set_title('ERA5-Land gaps deleted', fontsize=fs)
 ax3.set_title('ESA CCI gap-filled', fontsize=fs)
 ax4.set_title('ERA5-Land original', fontsize=fs)
 plt.savefig('trendmaps.png', dpi=300)
+
+######## PLOT TIMELINE ##############
 
 # northern extratropics mean
 orig = orig.sel(lat=slice(23.5,90))
