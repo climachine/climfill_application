@@ -54,6 +54,11 @@ flag.attrs = {'flag legend': '0 is observed, 1 is observed in less than 15d in t
 print(f'{datetime.now()} save...')
 data = data.to_dataset('variable')
 data = data.merge(flag)
-data.to_netcdf(f'{savepath}/data_climfilled.nc')
-flag.to_netcdf(f'{savepath}/flag_climfilled.nc')
+#data.to_netcdf(f'{savepath}/data_climfilled.nc')
+#flag.to_netcdf(f'{savepath}/flag_climfilled.nc')
+
+# save individual year names
+for year in np.unique(data['time.year']):
+    tmp = data.where(data['time.year'] == year, drop=True)
+    tmp.to_netcdf(f'{savepath}/data_climfilled_{year}.nc')
 
