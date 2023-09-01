@@ -11,12 +11,26 @@ import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch, Rectangle
 
+# control text sizes plot
+SMALL_SIZE = 15
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
+# parse testcase from terminal
 parser = argparse.ArgumentParser()
 parser.add_argument('--testcase', '-t', dest='testcase', type=str)
 args = parser.parse_args()
 testcase = args.testcase
 
-
+# set constants
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 varnames = ['soil_moisture','surface_temperature','precipitation', 
             'terrestrial_water_storage','snow_cover_fraction',
@@ -82,4 +96,4 @@ legend_elements = [Patch(facecolor='grey', edgecolor='grey',
                    label='unobserved points')]
 ax.legend(handles=legend_elements, loc='upper right',
           bbox_to_anchor=(1,0))
-plt.savefig('minicubes.png', dpi=300)
+plt.savefig('minicubes.jpeg', dpi=300)

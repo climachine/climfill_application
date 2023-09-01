@@ -23,6 +23,19 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'temperature_obs','precipitation_obs','burned_area',
             'diurnal_temperature_range'] #hardcoded for now
 
+# control text sizes plot
+SMALL_SIZE = 15
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 # open data
 mask = xr.open_dataset(f'{esapath}mask_orig.nc').to_array()
 mask = mask.sum(dim='variable').mean(dim='time')
@@ -49,4 +62,4 @@ ax = fig.add_subplot(111, projection=proj)
 mask.plot(cmap=cmap, levels=levels, transform=transf,
          cbar_kwargs={'label': '# of observations'})
 ax.set_title('Average number of available co-occurring variables')
-plt.savefig('coobs.png', dpi=300)
+plt.savefig('coobs.jpeg', dpi=300)

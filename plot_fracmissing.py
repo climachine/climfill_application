@@ -21,6 +21,19 @@ varnames = ['soil_moisture','surface_temperature','precipitation', #for order of
 # TODO
 # include burned area
 
+# control text sizes plot
+SMALL_SIZE = 15
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 # open data
 data = xr.open_dataset(f'{esapath}/data_orig.nc')
 mask = xr.open_dataset(f'{esapath}/mask_orig.nc')
@@ -126,10 +139,11 @@ varnames_plot = ['SM','LST','PSAT', #for order of plots
             'SCF', 'DTR', 'BA']
 #varnames_plot = ['surface layer \n soil moisture','land surface temperature',
 #                 'precipitation \n(satellite)', 
-for v, (varname, ax) in enumerate(zip(varnames, (ax1,ax2,ax3,ax7,ax8,ax9,ax13,ax14,ax15))):
+letters = ['a','b','c','d','e','f','g','h','i']
+for v, (letter, varname, ax) in enumerate(zip(letters,varnames, (ax1,ax2,ax3,ax7,ax8,ax9,ax13,ax14,ax15))):
     #frac = np.around(frac_mis[varname].item()*100, decimals=0)
     frac = round(frac_mis[varname].item()*100)
-    ax.set_title(f'{varnames_plot[v]}: {frac}% missing')
+    ax.set_title(f'{letter}) {varnames_plot[v]}: {frac}% missing')
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.7]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax)
@@ -175,4 +189,4 @@ ax16.set_facecolor('lightgrey')
 ax17.set_facecolor('lightgrey')
 ax18.set_facecolor('lightgrey')
 #plt.show()
-plt.savefig('frac_missing.png', dpi=300, bbox_inches='tight')
+plt.savefig('frac_missing.jpeg', dpi=300, bbox_inches='tight')

@@ -32,28 +32,20 @@ def calc_rmse(dat1, dat2, dim):
 # read climfill data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
-
-# read era data
 era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
-
-# read ismn data
-orig_ismn = xr.open_dataset(f'{esapath}data_orig_ismn.nc')
-fill_ismn = xr.open_dataset(f'{esapath}data_climfilled_ismn.nc')
-ismn = xr.open_dataset('/net/so4/landclim/bverena/large_files/df_gaps.nc')
-
-# remove all ismn stations with less than 3 obs because xr.corr gives 1/-1
-tmp = np.logical_not(np.isnan(ismn.mrso)).sum(dim='time')
-ismn = ismn.where(tmp >= 3, drop=True)
-orig_ismn = orig_ismn.where(tmp >= 3, drop=True)
-fill_ismn = fill_ismn.where(tmp >= 3, drop=True)
-
-#mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
-#mask_cv = xr.open_dataset(f'{esapath}{testcase}/mask_crossval.nc')
 
 # (optional) calculate anomalies
 orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
 era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
 fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+
+# sort data
+varnames = ['soil_moisture','surface_temperature','precipitation',
+            'temperature_obs', 'precipitation_obs','snow_cover_fraction',
+            'diurnal_temperature_range'] #hardcoded for now
+orig = orig.to_array().reindex(variable=varnames)
+era5 = era5.to_array().reindex(variable=varnames)
+fill = fill.to_array().reindex(variable=varnames)
 
 # normalise values for RMSE plotting
 datamean = orig.mean()
@@ -62,14 +54,6 @@ orig = (orig - datamean) / datastd
 era5 = (era5 - datamean) / datastd
 fill = (fill - datamean) / datastd
 
-# sort data
-varnames = ['soil_moisture','surface_temperature','precipitation',
-            'temperature_obs',
-            'precipitation_obs','diurnal_temperature_range',
-            'snow_cover_fraction'] #hardcoded for now
-orig = orig.to_array().reindex(variable=varnames)
-era5 = era5.to_array().reindex(variable=varnames)
-fill = fill.to_array().reindex(variable=varnames)
 
 # aggregate to regions
 # needs to be before corr bec otherwise all nans are ignored in orig
@@ -86,10 +70,6 @@ corr_orig = xr.corr(orig, era5, dim=('time'))
 corr_fill = xr.corr(fill, era5, dim=('time'))
 rmse_orig = calc_rmse(orig, era5, dim=('time'))
 rmse_fill = calc_rmse(fill, era5, dim=('time'))
-corr_orig_ismn = xr.corr(orig_ismn.mrso, ismn.mrso, dim='time')
-corr_fill_ismn = xr.corr(fill_ismn.mrso, ismn.mrso, dim='time')
-rmse_orig_ismn = calc_rmse(orig_ismn.mrso, ismn.mrso, dim='time')
-rmse_fill_ismn = calc_rmse(fill_ismn.mrso, ismn.mrso, dim='time')
 
 # remove nan for boxplot
 def filter_data(data):
@@ -119,22 +99,6 @@ x_pos =np.arange(0,2*len(corr_orig),2)
 wd = 0.5
 fs = 15
 
-varnames_plot = ['ismn','surface layer \nsoil moisture','surface temperature',
-                 'precipitation (sat)','2m temperature',
-                 'precipitation (ground)',
-                 'diurnal temperature range sfc','snow cover fraction'] 
-varnames_plot = ['$SM_{ISMN}$','$SM_{ERA5-Land}$','$LST_{ERA5-Land}$',
-                 '$PSAT_{ERA5-Land}$','$T2M_{ERA5-Land}$',
-                 '$P2M_{ERA5-Land}$',
-                 '$DTR_{ERA5-Land}$','$SNOW_{ERA5-Land}$'] 
-varnames_plot = ['surface layer \nsoil moisture','surface temperature',
-                 'precipitation (sat)','2m temperature',
-                 'precipitation (ground)',
-                 'diurnal temperature range sfc','snow cover fraction'] 
-#varnames_plot = ['$SM_{ERA5-Land}$','$LST_{ERA5-Land}$',
-#                 '$PSAT_{ERA5-Land}$','$T2M_{ERA5-Land}$',
-#                 '$P2M_{ERA5-Land}$',
-#                 '$DTR_{ERA5-Land}$','$SNOW_{ERA5-Land}$'] 
 varnames_plot = ['SM','LST','PSAT', #for order of plots
             'T2M','P2M',
             'DTR', 'SCF']

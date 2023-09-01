@@ -33,6 +33,19 @@ def expand_to_worldmap(data,regions):
 # JS not possible bec needs times where all 8 vars are observed (i.e. in the
 #      verification set) at the same time. ditched for now
 
+# control text sizes plot
+SMALL_SIZE = 15
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
@@ -66,19 +79,35 @@ orig = orig.groupby(regions).mean()
 era5 = era5.groupby(regions).mean()
 fill = fill.groupby(regions).mean()
 
-# aggregate per region
+# normalise values for RMSE plotting
+datamean = orig.mean()
+datastd = orig.std()
+orig = (orig - datamean) / datastd
+era5 = (era5 - datamean) / datastd
+fill = (fill - datamean) / datastd
+
+# plot
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
-fig = plt.figure(figsize=(15,10))
-ax1 = fig.add_subplot(331, projection=proj)
-ax2 = fig.add_subplot(332, projection=proj)
-ax3 = fig.add_subplot(333, projection=proj)
-ax4 = fig.add_subplot(334, projection=proj)
-ax5 = fig.add_subplot(335, projection=proj)
-ax6 = fig.add_subplot(336, projection=proj)
-ax7 = fig.add_subplot(337, projection=proj)
-ax8 = fig.add_subplot(338, projection=proj)
-ax9 = fig.add_subplot(339, projection=proj)
+fig = plt.figure(figsize=(15,10), layout='constrained')
+gs0 = fig.add_gridspec(1,2)
+
+gs00 = gs0[0].subgridspec(3,3)
+gs01 = gs0[1].subgridspec(2,1)
+
+ax1 = fig.add_subplot(gs00[0,0], projection=proj)
+ax2 = fig.add_subplot(gs00[0,1], projection=proj)
+ax3 = fig.add_subplot(gs00[0,2], projection=proj)
+ax4 = fig.add_subplot(gs00[1,0], projection=proj)
+ax5 = fig.add_subplot(gs00[1,1], projection=proj)
+ax6 = fig.add_subplot(gs00[1,2], projection=proj)
+ax7 = fig.add_subplot(gs00[2,0], projection=proj)
+ax8 = fig.add_subplot(gs00[2,1], projection=proj)
+ax9 = fig.add_subplot(gs00[2,2], projection=proj)
+
+ax10 = fig.add_subplot(gs01[0])
+ax11 = fig.add_subplot(gs01[1])
+
 levels = np.arange(-1,1.1,0.1)
 levels = np.arange(-1.05,1.15,0.1) # colorscale go through white
 fs = 15
@@ -87,15 +116,7 @@ cmap = plt.get_cmap('seismic_r')
 cmap.set_over('aliceblue')
 cmap.set_bad('lightgrey')
 
-#varnames_plot = ['surface layer \nsoil moisture','surface temperature',
-#                 'precipitation (sat)','terrestrial water storage','2m temperature',
-#                 'precipitation (ground)', 'burned area',
-#                 'diurnal temperature range sfc','snow cover fraction'] 
 varnames_plot = ['SM','LST','PSAT','TWS','T2M','P2M','SCF','DTR','BA']
-
-#varnames = ['soil_moisture','surface_temperature','precipitation',
-#            'terrestrial_water_storage','temperature_obs','precipitation_obs',
-#            'burned_area','diurnal_temperature_range','snow_cover_fraction'] 
 axes = [ax1,ax2,ax3,ax5,ax6,ax7,ax8]
 for v, (varname, ax) in enumerate(zip(varnames, axes)):
     corrorig = xr.corr(orig.sel(variable=varname),era5.sel(variable=varname), dim='time')
@@ -124,8 +145,9 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
                                                  ax=ax, add_label=False, projection=transf)
 
 axes = [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]
-for ax, varname in zip(axes, varnames_plot):
-    ax.set_title(varname, fontsize=fs)
+letters = ['a','b','c','d','e','f','g','h','i']
+for ax, letter, varname in zip(axes, letters, varnames_plot):
+    ax.set_title(f'{letter}) {varname}', fontsize=fs)
 
 
 cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
@@ -133,4 +155,67 @@ cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
 cbar.set_label('Pearson correlation coefficient', fontsize=fs)
 fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
 
+# calc metrics
+corr_orig = xr.corr(orig, era5, dim=('time'))
+corr_fill = xr.corr(fill, era5, dim=('time'))
+rmse_orig = calc_rmse(orig, era5, dim=('time'))
+rmse_fill = calc_rmse(fill, era5, dim=('time'))
+
+# remove nan for boxplot
+def filter_data(data):
+    mask = ~np.isnan(data)
+    filtered_data = [d[m] for d, m in zip(data.values, mask.values)]
+    return filtered_data
+corr_orig = filter_data(corr_orig)
+corr_fill = filter_data(corr_fill)
+rmse_orig = filter_data(rmse_orig)
+rmse_fill = filter_data(rmse_fill)
+corr_orig_ismn = corr_orig_ismn[~np.isnan(corr_orig_ismn)].values
+corr_fill_ismn = corr_fill_ismn[~np.isnan(corr_fill_ismn)].values
+rmse_orig_ismn = rmse_orig_ismn[~np.isnan(rmse_orig_ismn)].values
+rmse_fill_ismn = rmse_fill_ismn[~np.isnan(rmse_fill_ismn)].values
+
+# plot
+x_pos =np.arange(0,2*len(corr_orig),2)
+wd = 0.5
+fs = 15
+
+varnames_plot = ['SM','LST','PSAT', #for order of plots
+            'T2M','P2M',
+            'DTR', 'SCF']
+boxplot_kwargs = {'notch': False,
+                  'patch_artist': True}
+col_fill = 'coral'
+col_miss = 'steelblue'
+
+b1 = ax10.boxplot(positions=x_pos, x=corr_fill, showfliers=False, **boxplot_kwargs)
+b2 = ax10.boxplot(positions=x_pos+wd, x=corr_orig, showfliers=False, **boxplot_kwargs)
+
+b3 = ax11.boxplot(positions=x_pos, x=rmse_fill, showfliers=False, **boxplot_kwargs)
+b4 = ax11.boxplot(positions=x_pos+wd, x=rmse_orig, showfliers=False, **boxplot_kwargs)
+
+for box in b1['boxes'] + b3['boxes']:
+    box.set_facecolor(col_fill)
+for box in b2['boxes'] + b4['boxes']:
+    box.set_facecolor(col_miss)
+for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
+    median.set_color('black')
+
+ax10.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax11.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax10.set_ylim([0,1]) 
+ax11.set_ylim([0,1.4]) 
+ax10.set_xlim([-1,14])
+ax11.set_xlim([-1,14])
+
+ax10.set_ylabel('Pearson correlation coefficient', fontsize=fs)
+ax11.set_ylabel('RMSE on normalized values', fontsize=fs)
+fig.suptitle('(a) Benchmarking scores', fontsize=20)
+
+ax10.set_xticklabels(varnames_plot, fontsize=fs)
+ax11.set_xticklabels(varnames_plot, fontsize=fs)
+
+legend_elements = [Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL'),
+                   Patch(facecolor=col_miss, edgecolor='black', label='With Gaps')]
+ax11.legend(handles=legend_elements, loc='upper right', fontsize=fs)
 plt.savefig('benchmarking_maps.png')
