@@ -90,11 +90,11 @@ fill = (fill - datamean) / datastd
 # plot
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
-fig = plt.figure(figsize=(15,10), layout='constrained')
+fig = plt.figure(figsize=(20,8), layout='constrained')
 gs0 = fig.add_gridspec(1,2)
 
 gs00 = gs0[0].subgridspec(3,3)
-gs01 = gs0[1].subgridspec(2,1)
+gs01 = gs0[1].subgridspec(2,2, width_ratios=[0.2,1,1])
 
 ax1 = fig.add_subplot(gs00[0,0], projection=proj)
 ax2 = fig.add_subplot(gs00[0,1], projection=proj)
@@ -106,8 +106,8 @@ ax7 = fig.add_subplot(gs00[2,0], projection=proj)
 ax8 = fig.add_subplot(gs00[2,1], projection=proj)
 ax9 = fig.add_subplot(gs00[2,2], projection=proj)
 
-ax10 = fig.add_subplot(gs01[0])
-ax11 = fig.add_subplot(gs01[1])
+ax10 = fig.add_subplot(gs01[1,0])
+ax11 = fig.add_subplot(gs01[1,1])
 
 levels = np.arange(-1,1.1,0.1)
 levels = np.arange(-1.05,1.15,0.1) # colorscale go through white
@@ -151,7 +151,7 @@ for ax, letter, varname in zip(axes, letters, varnames_plot):
     ax.set_title(f'{letter}) {varname}', fontsize=fs)
 
 
-cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
+cbar_ax = fig.add_axes([0.53, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
 cbar.set_label('Pearson correlation coefficient', fontsize=fs)
 fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
@@ -198,21 +198,24 @@ for box in b2['boxes'] + b4['boxes']:
 for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
     median.set_color('black')
 
-ax10.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+#ax10.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax11.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
-ax10.set_ylim([0,1]) 
-ax11.set_ylim([0,1.4]) 
+ax10.set_ylim([-0.1,1]) 
+ax11.set_ylim([-0.1,1.4]) 
 ax10.set_xlim([-1,14])
 ax11.set_xlim([-1,14])
 
 ax10.set_ylabel('Pearson correlation coefficient', fontsize=fs)
 ax11.set_ylabel('RMSE on normalized values', fontsize=fs)
-fig.suptitle('(a) Benchmarking scores', fontsize=20)
+fig.suptitle('Benchmarking scores', fontsize=20)
 
-ax10.set_xticklabels(varnames_plot, fontsize=fs)
+#ax10.set_xticklabels(varnames_plot, fontsize=fs)
 ax11.set_xticklabels(varnames_plot, fontsize=fs)
+
+ax10.set_title('j) median of global pearson correlation coefficient')
+ax11.set_title('k) median of global RMSE')
 
 legend_elements = [Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL'),
                    Patch(facecolor=col_miss, edgecolor='black', label='With Gaps')]
 ax11.legend(handles=legend_elements, loc='upper right', fontsize=fs)
-plt.savefig('benchmarking_maps.png')
+plt.savefig('benchmarking_maps.jpeg',dpi=300)

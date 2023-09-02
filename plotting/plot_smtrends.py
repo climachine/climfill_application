@@ -25,6 +25,19 @@ def calc_rmse(dat1, dat2, dim):
 def area_weighted(lat):
     return np.cos(np.deg2rad(lat))
 
+# control text sizes plot
+SMALL_SIZE = 15
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc').soil_moisture
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc').soil_moisture
@@ -84,11 +97,16 @@ fill_trends = fill_trends.where(np.logical_not(landmask), 10) # ocean blue
 # plot map
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
-fig = plt.figure(figsize=(15,10))
-ax1 = fig.add_subplot(221, projection=proj)
-ax2 = fig.add_subplot(222, projection=proj)
-ax3 = fig.add_subplot(223, projection=proj)
-ax4 = fig.add_subplot(224, projection=proj)
+fig = plt.figure(figsize=(13,13), layout='constrained')
+gs0 = fig.add_gridspec(2,1)
+
+gs00 = gs0[0].subgridspec(2,3, width_ratios=[1,1,0.3])
+gs01 = gs0[1].subgridspec(1,1)
+
+ax1 = fig.add_subplot(gs00[0,0], projection=proj)
+ax2 = fig.add_subplot(gs00[0,1], projection=proj)
+ax3 = fig.add_subplot(gs00[1,0], projection=proj)
+ax4 = fig.add_subplot(gs00[1,1], projection=proj)
 fs = 15
 levels = 9
 
@@ -103,30 +121,16 @@ erag_trends.plot(ax=ax2, add_colorbar=False, vmin=vmin, vmax=vmax, cmap=cmap, tr
 fill_trends.plot(ax=ax3, add_colorbar=False, vmin=vmin, vmax=vmax, cmap=cmap, transform=transf, levels=levels)
 era5_trends.plot(ax=ax4, add_colorbar=False, vmin=vmin, vmax=vmax, cmap=cmap, transform=transf, levels=levels)
 
-#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
-#                                             ax=ax1, add_label=False, projection=transf)
-#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
-#                                             ax=ax2, add_label=False, projection=transf)
-#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
-#                                             ax=ax3, add_label=False, projection=transf)
-#regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
-#                                             ax=ax4, add_label=False, projection=transf)
-
-cbar_ax = fig.add_axes([0.91, 0.15, 0.02, 0.6]) # left bottom width height
+cbar_ax = fig.add_axes([0.88, 0.51, 0.02, 0.4]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
-cbar.set_label('Surface layer soil moisture trends [$m^3\;m^{-3}$ per year]', fontsize=fs)
-fig.suptitle('(a) Soil moisture trends, 1996-2020', fontsize=20)
+cbar.set_label('Surface layer soil moisture trends [$m^3\;m^{-3}$ per year]')
+fig.suptitle('Soil moisture trends, 1996-2020')
 
-#ax1.coastlines()
-#ax2.coastlines()
-#ax3.coastlines()
-#ax4.coastlines()
-
-ax1.set_title('ESA CCI original', fontsize=fs)
-ax2.set_title('ERA5-Land gaps deleted', fontsize=fs)
-ax3.set_title('ESA CCI gap-filled', fontsize=fs)
-ax4.set_title('ERA5-Land original', fontsize=fs)
-plt.savefig('trendmaps.png', dpi=300)
+ax1.set_title('a) ESA CCI original')
+ax2.set_title('b) ERA5-Land gaps deleted')
+ax3.set_title('c) ESA CCI gap-filled')
+ax4.set_title('d) ERA5-Land original')
+#plt.savefig('trendmaps.png', dpi=300)
 
 ######## PLOT TIMELINE ##############
 
@@ -142,27 +146,16 @@ era5 = era5.weighted(area_weighted(era5.lat)).mean(dim=('lat','lon'))
 erag = erag.weighted(area_weighted(erag.lat)).mean(dim=('lat','lon'))
 
 # 2007-2018 as baseline
-#orig_mean = orig.sel(time=slice('2007','2018')).mean(dim='time')
-#fill_mean = fill.sel(time=slice('2007','2018')).mean(dim='time')
-#era5_mean = era5.sel(time=slice('2007','2018')).mean(dim='time')
-#erag_mean = erag.sel(time=slice('2007','2018')).mean(dim='time')
 orig_mean = orig.mean(dim='time')
 fill_mean = fill.mean(dim='time')
 era5_mean = era5.mean(dim='time')
 erag_mean = erag.mean(dim='time')
-##
-##import IPython; IPython.embed()
+
+# subtract mean
 orig = orig - orig_mean
 fill = fill - fill_mean
 era5 = era5 - era5_mean
 erag = erag - erag_mean
-
-
-# scale by 100 to get values less close to zero
-#orig = orig*100
-#fill = fill*100
-#era5 = era5*100
-#erag = erag*100
 
 col_fill = 'darkgrey'
 col_miss = 'indianred'
@@ -170,15 +163,15 @@ col_ismn = 'black'
 col_erag = 'black'
 
 # plot
-fig = plt.figure(figsize=(11,4))
-ax = fig.add_subplot(111)
-im = orig.plot(ax=ax, color=col_fill, label='ESA CCI original')
-fill.plot(ax=ax, color=col_miss, label='ESA CCI gap-filled')
-era5.plot(ax=ax, color=col_ismn, label='ERA5-Land original')
-erag.plot(ax=ax, color=col_erag, label='satellite-observable ERA5-Land', linestyle='--')
-ax.set_ylabel('surface layer soil moisture, \ndeviations from 1996-2020 \naverage $[m^{3}\;m^{-3}]$', fontsize=fs)
-ax.set_xlabel('time', fontsize=fs)
-fig.suptitle('(b) Northern Extratropics', fontsize=fs)
-ax.legend(fontsize=fs, loc='lower right')
-ax.set_ylim([-0.02,0.015])
-plt.savefig('sm_test3.pdf')
+ax5 = fig.add_subplot(gs01[0,0])
+im = orig.plot(ax=ax5, color=col_fill, label='ESA CCI original')
+fill.plot(ax=ax5, color=col_miss, label='ESA CCI gap-filled')
+era5.plot(ax=ax5, color=col_ismn, label='ERA5-Land original')
+erag.plot(ax=ax5, color=col_erag, label='satellite-observable ERA5-Land', linestyle='--')
+ax5.set_ylabel('surface layer soil moisture, \ndeviations from 1996-2020 \naverage $[m^{3}\;m^{-3}]$')
+ax5.axhline(y=0, linewidth=0.5,c='black')
+ax5.set_xlabel('time')
+ax5.set_title('e) Northern Extratropics mean')
+ax5.legend(loc='lower right')
+ax5.set_ylim([-0.02,0.015])
+plt.savefig('trends.jpeg',dpi=300)
