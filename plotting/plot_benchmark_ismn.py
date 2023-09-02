@@ -24,11 +24,24 @@ col_miss = 'darkgrey'
 col_ismn = 'olivedrab'
 col_intp =  'steelblue'
 
+# control text sizes plot
+SMALL_SIZE = 20
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc').soil_moisture
 #intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').soil_moisture
 #fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc').soil_moisture
-ismn = xr.open_dataset('/net/so4/landclim/bverena/large_files/df_gaps.nc')
+ismn = xr.open_dataset('/net/so4/landclim/bverena/large_files/optimal/df_gaps.nc')
 
 # select esa time period
 ismn = ismn.sel(time=time)
@@ -84,10 +97,16 @@ pcorr_fill = xr.corr(ismn, fill_ismn_del, dim='time')
 # plot station locations
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
-levels = np.arange(-1,1.1,0.1)
-fig = plt.figure(figsize=(10,10))
-ax1 = fig.add_subplot(211, projection=proj)
-ax2 = fig.add_subplot(212, projection=proj)
+fig = plt.figure(figsize=(25,10), layout='constrained')
+gs0 = fig.add_gridspec(1,2)
+levels = 9
+
+gs00 = gs0[0].subgridspec(2,1)
+gs01 = gs0[1].subgridspec(3,1)
+
+ax1 = fig.add_subplot(gs00[0], projection=proj)
+ax2 = fig.add_subplot(gs00[1], projection=proj)
+
 fs = 15
 levels = np.arange(-1,1.1,0.1)
 
@@ -113,45 +132,41 @@ ax2.scatter(pcorr_fill.sel(stations=stations).lon, pcorr_fill.sel(stations=stati
 ax1.set_global()
 ax2.set_global()
 
-cbar_ax = fig.add_axes([0.88, 0.15, 0.02, 0.6]) # left bottom width height
+cbar_ax = fig.add_axes([0.42, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
-cbar.set_label('Pearson correlation', fontsize=fs)
-ax1.set_title('(a) original ESA-CCI surface layer soil moisture', fontsize=fs)
-ax2.set_title('(b) gap-filled ESA-CCI surface layer soil moisture', fontsize=fs)
+cbar.set_label('Pearson correlation')
+ax1.set_title('a) original ESA-CCI surface layer soil moisture')
+ax2.set_title('b) gap-filled ESA-CCI surface layer soil moisture')
 
 legend_elements = [Line2D([0],[0],marker='x', color='white', markeredgecolor='red', label='selected stations')]
 ax2.legend(handles=legend_elements, loc='upper right',
-          bbox_to_anchor=(1,0), fontsize=fs)
-
-plt.savefig('ismn_worldmap.png', dpi=300)
-plt.close()
+          bbox_to_anchor=(1,0))
 
 # plot distribution of correlations
-fig = plt.figure(figsize=(10,4))
-ax = fig.add_subplot(111)
-#ax.bar(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
-#ax.bar(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
-ax.plot(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
-ax.plot(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
-ax.grid()
-ax.set_xlabel('stations')
-ax.set_ylabel('pearson correlation')
-ax.set_title('(f) cumulative histogram of station correlations', fontsize=fs)
-legend_elements = [Line2D([0], [0], color=col_miss, lw=4, label='original ESA-CCI'),
-                   Line2D([0], [0], color=col_fill, lw=4, label='gap-filled ESA-CCI')]
-ax.legend(handles=legend_elements)
-plt.savefig('ismn_pdf.png', dpi=300)
-plt.close()
+#fig = plt.figure(figsize=(10,4))
+#ax = fig.add_subplot(111)
+##ax.bar(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
+##ax.bar(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
+#ax.plot(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
+#ax.plot(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
+#ax.grid()
+#ax.set_xlabel('stations')
+#ax.set_ylabel('pearson correlation')
+#ax.set_title('(f) cumulative histogram of station correlations', fontsize=fs)
+#legend_elements = [Line2D([0], [0], color=col_miss, lw=4, label='original ESA-CCI'),
+#                   Line2D([0], [0], color=col_fill, lw=4, label='gap-filled ESA-CCI')]
+#ax.legend(handles=legend_elements)
+#plt.savefig('ismn_pdf.png', dpi=300)
+#plt.close()
 
 #orig_stations = orig_ismn.sel(stations=stations).mrso
 #fill_stations = fill_ismn.sel(stations=stations).mrso
 #ismn_stations = ismn.sel(stations=stations).mrso
 
 # plot example station
-fig = plt.figure(figsize=(10,10))
-ax1 = fig.add_subplot(311)
-ax2 = fig.add_subplot(312)
-ax3 = fig.add_subplot(313)
+ax1 = fig.add_subplot(gs01[0])
+ax2 = fig.add_subplot(gs01[1])
+ax3 = fig.add_subplot(gs01[2])
 
 #intp_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_intp, label='Interpolated ESA CCI')
 fill_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_fill, label='Gap-filled ESA CCI')
@@ -168,9 +183,9 @@ fill_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_fill)
 orig_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_miss)
 ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn)
 
-ax1.set_title('(c) Little River, SCAN Network, Georgia, USA')
-ax2.set_title('(d) N Piedmont Arec, SCAN Network, Virginia, USA')
-ax3.set_title('(e) Llanos de la Boveda, REMEDHUS Network, Spain')
+ax1.set_title('c) Little River, SCAN Network, Georgia, USA')
+ax2.set_title('d) N Piedmont Arec, SCAN Network, Virginia, USA')
+ax3.set_title('e) Llanos de la Boveda, REMEDHUS Network, Spain')
 
 ax1.set_xticklabels([])
 ax2.set_xticklabels([])
@@ -189,4 +204,4 @@ ax2.set_xlabel('')
 
 ax1.legend(loc='lower left')
 
-plt.savefig('benchmark_ismn.pdf')
+plt.savefig('ismn.jpeg', dpi=300)

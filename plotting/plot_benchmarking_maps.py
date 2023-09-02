@@ -81,6 +81,7 @@ era5 = era5.groupby(regions).mean()
 fill = fill.groupby(regions).mean()
 
 # normalise values for RMSE plotting
+import IPython; IPython.embed() #TODO: debug RMSE values
 datamean = orig.mean()
 datastd = orig.std()
 orig = (orig - datamean) / datastd
@@ -94,7 +95,7 @@ fig = plt.figure(figsize=(20,8), layout='constrained')
 gs0 = fig.add_gridspec(1,2)
 
 gs00 = gs0[0].subgridspec(3,3)
-gs01 = gs0[1].subgridspec(2,2, width_ratios=[0.2,1,1])
+gs01 = gs0[1].subgridspec(2,2, width_ratios=[0.2,1])
 
 ax1 = fig.add_subplot(gs00[0,0], projection=proj)
 ax2 = fig.add_subplot(gs00[0,1], projection=proj)
@@ -106,7 +107,7 @@ ax7 = fig.add_subplot(gs00[2,0], projection=proj)
 ax8 = fig.add_subplot(gs00[2,1], projection=proj)
 ax9 = fig.add_subplot(gs00[2,2], projection=proj)
 
-ax10 = fig.add_subplot(gs01[1,0])
+ax10 = fig.add_subplot(gs01[0,1])
 ax11 = fig.add_subplot(gs01[1,1])
 
 levels = np.arange(-1,1.1,0.1)
