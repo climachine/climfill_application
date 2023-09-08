@@ -54,7 +54,6 @@ orig = (orig - datamean) / datastd
 era5 = (era5 - datamean) / datastd
 fill = (fill - datamean) / datastd
 
-
 # aggregate to regions
 # needs to be before corr bec otherwise all nans are ignored in orig
 landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
@@ -80,16 +79,6 @@ corr_orig = filter_data(corr_orig)
 corr_fill = filter_data(corr_fill)
 rmse_orig = filter_data(rmse_orig)
 rmse_fill = filter_data(rmse_fill)
-corr_orig_ismn = corr_orig_ismn[~np.isnan(corr_orig_ismn)].values
-corr_fill_ismn = corr_fill_ismn[~np.isnan(corr_fill_ismn)].values
-rmse_orig_ismn = rmse_orig_ismn[~np.isnan(rmse_orig_ismn)].values
-rmse_fill_ismn = rmse_fill_ismn[~np.isnan(rmse_fill_ismn)].values
-
-# prepent ismn to era results
-#corr_orig = [corr_orig_ismn] + corr_orig
-#corr_fill = [corr_fill_ismn] + corr_fill
-#rmse_orig = [rmse_orig_ismn] + rmse_orig
-#rmse_fill = [rmse_fill_ismn] + rmse_fill
 
 # plot
 fig = plt.figure(figsize=(10,10))
@@ -120,7 +109,6 @@ for box in b2['boxes'] + b4['boxes']:
 for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
     median.set_color('black')
 
-#ax1.set_xticks([])
 ax1.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax1.set_ylim([0,1]) 
@@ -138,5 +126,4 @@ ax2.set_xticklabels(varnames_plot, fontsize=fs)
 legend_elements = [Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL'),
                    Patch(facecolor=col_miss, edgecolor='black', label='With Gaps')]
 ax2.legend(handles=legend_elements, loc='upper right', fontsize=fs)
-#plt.subplots_adjust(bottom=0.3)
 plt.savefig('benchmarking.png')

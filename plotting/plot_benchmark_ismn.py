@@ -11,11 +11,6 @@ import xarray as xr
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--testcase', '-t', dest='testcase', type=str)
-args = parser.parse_args()
-testcase = args.testcase
-
 esapath = '/net/so4/landclim/bverena/large_files/climfill_esa/'
 time = slice('1995','2020')
 
@@ -38,9 +33,6 @@ plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
 plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 # read data
-orig = xr.open_dataset(f'{esapath}data_orig.nc').soil_moisture
-#intp = xr.open_dataset(f'{esapath}{testcase}/data_interpolated.nc').soil_moisture
-#fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc').soil_moisture
 ismn = xr.open_dataset('/net/so4/landclim/bverena/large_files/optimal/df_gaps.nc')
 
 # select esa time period
@@ -71,7 +63,6 @@ ismn = ismn.where(mask, drop=True)
 #intp_ismn.to_netcdf(f'{esapath}data_intp_ismn.nc')
 #fill_ismn.to_netcdf(f'{esapath}data_climfilled_ismn.nc')
 orig_ismn = xr.open_dataarray(f'{esapath}data_orig_ismn.nc')
-intp_ismn = xr.open_dataarray(f'{esapath}data_intp_ismn.nc')
 fill_ismn = xr.open_dataarray(f'{esapath}data_climfilled_ismn.nc')
 ismn = ismn.mrso
 
@@ -80,12 +71,6 @@ tmp = np.logical_not(np.isnan(ismn)).sum(dim='time')
 stations = tmp.sortby(tmp, ascending=False)[:3].stations
 # note: station outside US only at place 161 (Iberian Peninsula, Nr 1274)
 stations = [1777,1811,1274]
-
-# extract anomaly
-#fill_ismn = fill_ismn.groupby('time.month') - fill_ismn.groupby('time.month').mean()
-#intp_ismn = intp_ismn.groupby('time.month') - intp_ismn.groupby('time.month').mean()
-#orig_ismn = orig_ismn.groupby('time.month') - orig_ismn.groupby('time.month').mean()
-#ismn = ismn.groupby('time.month') - ismn.groupby('time.month').mean()
 
 # get only gap-filled data for gap-filled dataset
 fill_ismn_del = fill_ismn.where(np.isnan(orig_ismn))
@@ -111,9 +96,8 @@ fs = 15
 levels = np.arange(-1,1.1,0.1)
 
 cmap = plt.get_cmap('Greys')
-landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
-
-#landmask.plot(ax=ax1, cmap=cmap, add_colorbar=False)
+landmask = xr.open_dataset(f'{esapath}landmask.nc').to_array()
+landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(landmask.lon, landmask.lat)
 
 im= ax1.scatter(pcorr_orig.lon, pcorr_orig.lat, c=pcorr_orig, transform=transf, cmap='seismic_r',
            vmin=-1, vmax=1, alpha=1, edgecolor='white', s=40)
@@ -121,8 +105,6 @@ ax1.coastlines()
 ax1.scatter(pcorr_orig.sel(stations=stations).lon, pcorr_orig.sel(stations=stations).lat, 
            marker='x', c='red', transform=transf)
 
-#im= ax2.scatter(pcorr_fill.lon, pcorr_fill.lat, c=pcorr_fill, transform=transf, cmap='seismic_r',
-#           vmin=-1, vmax=1, alpha=1, edgecolor=None)
 im= ax2.scatter(pcorr_fill.lon, pcorr_fill.lat, c=pcorr_fill, transform=transf, cmap='seismic_r',
            vmin=-1, vmax=1, alpha=1, edgecolor='white', s=40)
 ax2.coastlines()
@@ -142,33 +124,11 @@ legend_elements = [Line2D([0],[0],marker='x', color='white', markeredgecolor='re
 ax2.legend(handles=legend_elements, loc='upper right',
           bbox_to_anchor=(1,0))
 
-# plot distribution of correlations
-#fig = plt.figure(figsize=(10,4))
-#ax = fig.add_subplot(111)
-##ax.bar(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
-##ax.bar(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
-#ax.plot(np.arange(len(pcorr_orig)), pcorr_orig.sortby(pcorr_orig), color=col_miss)
-#ax.plot(np.arange(len(pcorr_fill)), pcorr_fill.sortby(pcorr_fill), color=col_fill)
-#ax.grid()
-#ax.set_xlabel('stations')
-#ax.set_ylabel('pearson correlation')
-#ax.set_title('(f) cumulative histogram of station correlations', fontsize=fs)
-#legend_elements = [Line2D([0], [0], color=col_miss, lw=4, label='original ESA-CCI'),
-#                   Line2D([0], [0], color=col_fill, lw=4, label='gap-filled ESA-CCI')]
-#ax.legend(handles=legend_elements)
-#plt.savefig('ismn_pdf.png', dpi=300)
-#plt.close()
-
-#orig_stations = orig_ismn.sel(stations=stations).mrso
-#fill_stations = fill_ismn.sel(stations=stations).mrso
-#ismn_stations = ismn.sel(stations=stations).mrso
-
 # plot example station
 ax1 = fig.add_subplot(gs01[0])
 ax2 = fig.add_subplot(gs01[1])
 ax3 = fig.add_subplot(gs01[2])
 
-#intp_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_intp, label='Interpolated ESA CCI')
 fill_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_fill, label='Gap-filled ESA CCI')
 orig_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_miss, label='ESA CCI with Gaps')
 ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_ismn, label='ISMN station')
@@ -190,11 +150,6 @@ ax3.set_title('e) Llanos de la Boveda, REMEDHUS Network, Spain')
 ax1.set_xticklabels([])
 ax2.set_xticklabels([])
 
-#ax1.set_ylim([-0.15,0.15])
-#ax2.set_ylim([-0.15,0.15])
-#ax3.set_ylim([-0.15,0.15])
-
-# TODO check units
 ax1.set_ylabel('surface layer \nsoil moisture $m^{3}m^{-3}$')
 ax2.set_ylabel('surface layer \nsoil moisture $m^{3}m^{-3}$')
 ax3.set_ylabel('surface layer \nsoil moisture $m^{3}m^{-3}$')

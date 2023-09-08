@@ -127,8 +127,8 @@ cbar.set_label('Surface layer soil moisture trends [$m^3\;m^{-3}$ per year]')
 fig.suptitle('Soil moisture trends, 1996-2020')
 
 ax1.set_title('a) ESA CCI original')
-ax2.set_title('b) ERA5-Land gaps deleted')
-ax3.set_title('c) ESA CCI gap-filled')
+ax3.set_title('b) ESA CCI gap-filled')
+ax2.set_title('c) ERA5-Land gaps deleted')
 ax4.set_title('d) ERA5-Land original')
 #plt.savefig('trendmaps.png', dpi=300)
 

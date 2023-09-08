@@ -69,6 +69,14 @@ orig = orig.to_array().reindex(variable=varnames)
 era5 = era5.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
 
+# normalise values for RMSE plotting
+import IPython; IPython.embed() #TODO: debug RMSE values
+datamean = orig.mean()
+datastd = orig.std()
+orig = (orig - datamean) / datastd
+era5 = (era5 - datamean) / datastd
+fill = (fill - datamean) / datastd
+
 # aggregate to regions
 # needs to be before corr bec otherwise all nans are ignored in orig
 landmask = regionmask.defined_regions.natural_earth_v5_0_0.land_110.mask(orig.lon, orig.lat)
@@ -79,14 +87,6 @@ obsmask = xr.open_dataset(f'{esapath}landmask.nc').landmask
 orig = orig.groupby(regions).mean()
 era5 = era5.groupby(regions).mean()
 fill = fill.groupby(regions).mean()
-
-# normalise values for RMSE plotting
-import IPython; IPython.embed() #TODO: debug RMSE values
-datamean = orig.mean()
-datastd = orig.std()
-orig = (orig - datamean) / datastd
-era5 = (era5 - datamean) / datastd
-fill = (fill - datamean) / datastd
 
 # plot
 proj = ccrs.Robinson()
@@ -152,7 +152,7 @@ for ax, letter, varname in zip(axes, letters, varnames_plot):
     ax.set_title(f'{letter}) {varname}', fontsize=fs)
 
 
-cbar_ax = fig.add_axes([0.53, 0.15, 0.02, 0.6]) # left bottom width height
+cbar_ax = fig.add_axes([0.51, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
 cbar.set_label('Pearson correlation coefficient', fontsize=fs)
 fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
