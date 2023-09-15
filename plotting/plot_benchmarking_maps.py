@@ -52,10 +52,21 @@ orig = xr.open_dataset(f'{esapath}data_orig.nc')
 fill = xr.open_dataset(f'{esapath}{testcase}/data_climfilled.nc')
 era5 = xr.open_dataset(f'{esapath}data_era5land.nc')
 
+# faster alternative
+origmean = xr.open_dataset(f'{esapath}{testcase}/data_orig_permonth.nc')
+fillmean = xr.open_dataset(f'{esapath}{testcase}/data_fill_permonth.nc')
+era5mean = xr.open_dataset(f'{esapath}{testcase}/data_era5_permonth.nc')
+
 # (optional) calculate anomalies
-orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
-era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
-fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+#orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
+#era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
+#fill = fill.groupby('time.month') - fill.groupby('time.month').mean()
+orig = orig.groupby('time.month') - origmean
+era5 = era5.groupby('time.month') - era5mean
+fill = fill.groupby('time.month') - fillmean
+
+# cut out antarctica
+era5 = era5.where(np.logical_not(np.isnan(fill)))
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
