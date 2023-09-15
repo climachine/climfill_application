@@ -95,11 +95,11 @@ fill = fill.groupby(regions).mean()
 # plot
 proj = ccrs.Robinson()
 transf = ccrs.PlateCarree()
-fig = plt.figure(figsize=(20,8), layout='constrained')
-gs0 = fig.add_gridspec(1,2)
+fig = plt.figure(figsize=(8,14))
+gs0 = fig.add_gridspec(2,1)
 
-gs00 = gs0[0].subgridspec(3,3)
-gs01 = gs0[1].subgridspec(2,2, width_ratios=[0.2,1])
+gs00 = gs0[0].subgridspec(3,4, width_ratios=[1,1,1,0.2])
+gs01 = gs0[1].subgridspec(2,1)
 
 ax1 = fig.add_subplot(gs00[0,0], projection=proj)
 ax2 = fig.add_subplot(gs00[0,1], projection=proj)
@@ -111,8 +111,8 @@ ax7 = fig.add_subplot(gs00[2,0], projection=proj)
 ax8 = fig.add_subplot(gs00[2,1], projection=proj)
 ax9 = fig.add_subplot(gs00[2,2], projection=proj)
 
-ax10 = fig.add_subplot(gs01[0,1])
-ax11 = fig.add_subplot(gs01[1,1])
+ax10 = fig.add_subplot(gs01[0])
+ax11 = fig.add_subplot(gs01[1])
 
 levels = np.arange(-1,1.1,0.1)
 levels = np.arange(-1.05,1.15,0.1) # colorscale go through white
@@ -156,7 +156,7 @@ for ax, letter, varname in zip(axes, letters, varnames_plot):
     ax.set_title(f'{letter}) {varname}', fontsize=fs)
 
 
-cbar_ax = fig.add_axes([0.51, 0.15, 0.02, 0.6]) # left bottom width height
+cbar_ax = fig.add_axes([0.85, 0.51, 0.02, 0.4]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
 cbar.set_label('Pearson correlation coefficient', fontsize=fs)
 fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
