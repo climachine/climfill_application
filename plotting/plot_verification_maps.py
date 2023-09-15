@@ -24,6 +24,19 @@ def calc_rmse(dat1, dat2, dim):
 # JS not possible bec needs times where all 8 vars are observed (i.e. in the
 #      verification set) at the same time. ditched for now
 
+# control text sizes plot
+SMALL_SIZE = 15
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 # read data
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 mask_initguess = xr.open_dataset(f'{esapath}{testcase}/mask_initguess.nc')
@@ -139,6 +152,7 @@ def expand_to_worldmap(data,regions):
     return test
 
 #varnames = ['burned_area'] #DEBUG
+letter = ['a','b','c','d','e','f','g','h','i']
 for v, (varname, ax) in enumerate(zip(varnames, axes)):
 
     # avoid very small skill scores by very small differences; scf they are -inf now
@@ -163,13 +177,13 @@ for v, (varname, ax) in enumerate(zip(varnames, axes)):
     # plot
     im = skillscore.plot(ax=ax, cmap=cmap, vmin=-1, vmax=1, transform=transf, 
                   levels=levels, add_colorbar=False)
-    ax.set_title(varnames_plot[v], fontsize=fs)
+    ax.set_title(f'{letter[v]}) {varnames_plot[v]}', fontsize=fs)
     regionmask.defined_regions.ar6.land.plot(line_kws=dict(color='black', linewidth=1), 
                                                  ax=ax, add_label=False, projection=transf)
 
-cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.6]) # left bottom width height
+cbar_ax = fig.add_axes([0.91, 0.15, 0.02, 0.6]) # left bottom width height
 cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
 cbar.set_label('Pearson correlation coefficient', fontsize=fs)
-fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
+fig.suptitle('Pearson correlation coefficient on anomalies', fontsize=20)
 
-plt.savefig('correlation_maps.png')
+plt.savefig('correlation_maps.jpeg', dpi=300)
