@@ -57,6 +57,10 @@ origmean = xr.open_dataset(f'{esapath}{testcase}/data_orig_permonth.nc')
 fillmean = xr.open_dataset(f'{esapath}{testcase}/data_fill_permonth.nc')
 era5mean = xr.open_dataset(f'{esapath}{testcase}/data_era5_permonth.nc')
 
+# cut out antarctica
+era5 = era5.where(np.logical_not(np.isnan(fill)))
+era5mean = era5mean.where(np.logical_not(np.isnan(fill)))
+
 # (optional) calculate anomalies
 #orig = orig.groupby('time.month') - orig.groupby('time.month').mean()
 #era5 = era5.groupby('time.month') - era5.groupby('time.month').mean()
@@ -64,9 +68,6 @@ era5mean = xr.open_dataset(f'{esapath}{testcase}/data_era5_permonth.nc')
 orig = orig.groupby('time.month') - origmean
 era5 = era5.groupby('time.month') - era5mean
 fill = fill.groupby('time.month') - fillmean
-
-# cut out antarctica
-era5 = era5.where(np.logical_not(np.isnan(fill)))
 
 # sort data
 varnames = ['soil_moisture','surface_temperature','precipitation',
@@ -79,14 +80,6 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
 orig = orig.to_array().reindex(variable=varnames)
 era5 = era5.to_array().reindex(variable=varnames)
 fill = fill.to_array().reindex(variable=varnames)
-
-# normalise values for RMSE plotting
-import IPython; IPython.embed() #TODO: debug RMSE values
-datamean = orig.mean()
-datastd = orig.std()
-orig = (orig - datamean) / datastd
-era5 = (era5 - datamean) / datastd
-fill = (fill - datamean) / datastd
 
 # aggregate to regions
 # needs to be before corr bec otherwise all nans are ignored in orig
@@ -168,6 +161,13 @@ cbar = fig.colorbar(im, cax=cbar_ax, orientation='vertical')
 cbar.set_label('Pearson correlation coefficient', fontsize=fs)
 fig.suptitle('(b) Pearson correlation coefficient on anomalies', fontsize=20)
 
+# normalise values for RMSE plotting
+datamean = orig.mean(dim=('mask','time'))
+datastd = orig.std(dim=('mask','time'))
+orig = (orig - datamean) / datastd
+era5 = (era5 - datamean) / datastd
+fill = (fill - datamean) / datastd
+
 # calc metrics
 corr_orig = xr.corr(orig, era5, dim=('time'))
 corr_fill = xr.corr(fill, era5, dim=('time'))
@@ -213,7 +213,7 @@ for median in b1['medians'] + b2['medians'] + b3['medians'] + b4['medians']:
 #ax10.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax11.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax10.set_ylim([-0.1,1]) 
-ax11.set_ylim([-0.1,1.4]) 
+#ax11.set_ylim([-0.1,1.4])  # DEBUG
 ax10.set_xlim([-1,14])
 ax11.set_xlim([-1,14])
 
