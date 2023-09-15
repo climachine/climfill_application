@@ -221,5 +221,6 @@ sm.plot(transform=transf, cmap=cmap, vmin=0, vmax=0.5,
                                add_colorbar=False, ax=ax)
 ax.set_title('')
 ax.coastlines()
-plt.savefig('title_image.png', dpi=1000)
+#plt.savefig('title_image.png', dpi=1000)
+plt.savefig('title_image.pdf')
 plt.close()
