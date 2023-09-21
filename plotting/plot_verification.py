@@ -25,6 +25,19 @@ varnames = ['soil_moisture','surface_temperature','precipitation',
             'terrestrial_water_storage','temperature_obs','precipitation_obs',
             'snow_cover_fraction','diurnal_temperature_range','burned_area'] 
 
+# control text sizes plot
+SMALL_SIZE = 15
+MEDIUM_SIZE = SMALL_SIZE+2
+BIGGER_SIZE = SMALL_SIZE+4
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 def calc_rmse(dat1, dat2, dim):
     return np.sqrt(((dat1 - dat2)**2).mean(dim=dim))
 
@@ -32,7 +45,7 @@ def calc_rmse(dat1, dat2, dim):
 orig = xr.open_dataset(f'{esapath}data_orig.nc')
 mask_initguess = xr.open_dataset(f'{esapath}{testcase}/mask_initguess.nc')
 mask_orig = xr.open_dataset(f'{esapath}mask_orig.nc')
-#mask_cubes = xr.open_dataset(f'{esapath}{testcase}/verification/mask_cubes.nc')
+mask_cubes = xr.open_dataset(f'{esapath}{testcase}/verification/mask_cubes.nc')
 intp = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_interpolated_del.nc')
 fill = xr.open_mfdataset(f'{esapath}{testcase}/verification/set?/data_climfilled_del.nc')
 
@@ -57,11 +70,11 @@ intp = intp.where(np.logical_not(mask_initguess))
 fill = fill.where(np.logical_not(mask_initguess))
 
 # normalise values for RMSE plotting
-datamean = orig.mean()
-datastd = orig.std()
-orig = (orig - datamean) / datastd
-intp = (intp - datamean) / datastd
-fill = (fill - datamean) / datastd
+#datamean = orig.mean()
+#datastd = orig.std()
+#orig = (orig - datamean) / datastd
+#intp = (intp - datamean) / datastd
+#fill = (fill - datamean) / datastd
 
 # sort data
 varnames_plot = ['SM','LST','PSAT', #for order of plots
@@ -77,7 +90,14 @@ orig = orig.where(obsmask) # not obs dark grey
 intp = intp.where(obsmask) # not obs dark grey
 fill = fill.where(obsmask) # not obs dark grey
 
-# (optional) calculate anomalies
+# normalise values for RMSE plotting
+datamean = orig.mean(dim=('lat','lon','time'))
+datastd = orig.std(dim=('lat','lon','time'))
+orig = (orig - datamean) / datastd
+intp = (intp - datamean) / datastd
+fill = (fill - datamean) / datastd
+
+# calculate anomalies
 orig_seas = orig.groupby('time.month').mean()
 intp_seas = intp.groupby('time.month').mean()
 fill_seas = fill.groupby('time.month').mean()
@@ -168,7 +188,7 @@ rmse_fill_seas = filter_data(rmse_fill_seas)
 
 # plot
 varnames_plot = ['SM','LST','PSAT','TWS','T2M','P2M','SCF','DTR','BA']
-fig = plt.figure(figsize=(25,10))
+fig = plt.figure(figsize=(18,12))
 ax1 = fig.add_subplot(231)
 ax2 = fig.add_subplot(232)
 ax3 = fig.add_subplot(233)
@@ -216,22 +236,32 @@ ax1.set_xticks([])
 ax2.set_xticks([])
 ax3.set_xticks([])
 
+ax1.axhline(y=0, c='black')
+ax2.axhline(y=0, c='black')
+ax3.axhline(y=0, c='black')
+ax4.axhline(y=0, c='black')
+ax5.axhline(y=0, c='black')
+ax6.axhline(y=0, c='black')
+
 legend_elements = [Patch(facecolor=col_intp, edgecolor='black', label='Initial guess'),
                    Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL')]
 
-ax6.legend(handles=legend_elements, loc='upper right', fontsize=fs)
+ax6.legend(handles=legend_elements, loc='upper right')
 
-ax4.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90, fontsize=fs)
-ax5.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90, fontsize=fs)
-ax6.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90, fontsize=fs)
+ax1.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax3.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax4.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax5.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
+ax6.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 
 ax1.set_ylim([-0.5,1.1]) 
 ax2.set_ylim([-0.5,1.1]) 
 ax3.set_ylim([-0.5,1.1]) 
 
-ax4.set_ylim([-0.0,1.2]) 
-ax5.set_ylim([-0.0,1.2]) 
-ax6.set_ylim([-0.0,1.2]) 
+ax4.set_ylim([-0.1,1.2]) 
+ax5.set_ylim([-0.1,1.2]) 
+ax6.set_ylim([-0.1,1.2]) 
 
 ax1.set_xlim([-1,18])
 ax2.set_xlim([-1,18])
@@ -246,13 +276,16 @@ ax6.set_xlim([-1,18])
 #ax4.set_title('RSME (normalized)')
 #ax5.set_title('RSME (normalized)')
 #ax6.set_title('RSME (normalized)')
-ax1.set_title('Time series', fontsize=fs)
-ax2.set_title('Anomalies of time series', fontsize=fs)
-ax3.set_title('Seasonal cycle', fontsize=fs)
+ax1.set_title('a) Time series')
+ax2.set_title('b) Anomalies of time series')
+ax3.set_title('c) Seasonal cycle')
+ax4.set_title('d)')
+ax5.set_title('e)')
+ax6.set_title('f)')
 
-ax1.set_ylabel('Pearson correlation coefficient', fontsize=fs)
-ax4.set_ylabel('RMSE on normalized values', fontsize=fs)
-fig.suptitle('(a) Verification scores', fontsize=20)
+ax1.set_ylabel('Pearson \ncorrelation coefficient')
+ax4.set_ylabel('RMSE \non normalized values')
+fig.suptitle('Validation scores')
 
 #plt.subplots_adjust(bottom=0.3)
-plt.savefig('verification.png')
+plt.savefig('verification.pdf')

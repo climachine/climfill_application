@@ -93,7 +93,7 @@ ax1.set_ylim([0,26])
 ax2 = ax1.twinx() 
 tmp = pcorr_intp.median(dim='stations').values
 tmp2 = pcorr_fill.median(dim='stations').values
-ax2.plot(tmp, label='interpolation', linewidth=2)
+ax2.plot(tmp, label='initial guess', linewidth=2)
 ax2.plot(tmp2, label='CLIMFILL', linewidth=2)
 #pcorr_intp.median(dim='stations').plot(ax=ax2, label='interpolation', linewidth=2)
 #pcorr_fill.median(dim='stations').plot(ax=ax2, label='CLIMFILL', linewidth=2)
