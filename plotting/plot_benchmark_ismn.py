@@ -17,7 +17,6 @@ time = slice('1995','2020')
 col_fill = 'coral'
 col_miss = 'darkgrey'
 col_ismn = 'olivedrab'
-col_intp =  'steelblue'
 
 # control text sizes plot
 SMALL_SIZE = 20
@@ -52,15 +51,12 @@ ismn = ismn.where(mask, drop=True)
 ## ismn to worldmap
 ## easier: orig and fill to ismn shape
 #orig_ismn = xr.full_like(ismn, np.nan)
-#intp_ismn = xr.full_like(ismn, np.nan)
 #fill_ismn = xr.full_like(ismn, np.nan)
 #
 #for i, (lat,lon) in enumerate(zip(ismn.lat.values, ismn.lon.values)):
 #    orig_ismn.mrso[:,i] = orig.sel(lat=lat, lon=lon, method='nearest')
-#    intp_ismn.mrso[:,i] = intp.sel(lat=lat, lon=lon, method='nearest')
 #    fill_ismn.mrso[:,i] = fill.sel(lat=lat, lon=lon, method='nearest')
 #orig_ismn.to_netcdf(f'{esapath}data_orig_ismn.nc')
-#intp_ismn.to_netcdf(f'{esapath}data_intp_ismn.nc')
 #fill_ismn.to_netcdf(f'{esapath}data_climfilled_ismn.nc')
 orig_ismn = xr.open_dataarray(f'{esapath}data_orig_ismn.nc')
 fill_ismn = xr.open_dataarray(f'{esapath}data_climfilled_ismn.nc')
@@ -74,6 +70,7 @@ stations = [1777,1811,1274]
 
 # get only gap-filled data for gap-filled dataset
 fill_ismn_del = fill_ismn.where(np.isnan(orig_ismn))
+fill_ismn_del = fill_ismn
 
 # calculate correlation
 pcorr_orig = xr.corr(ismn, orig_ismn, dim='time')
@@ -133,12 +130,10 @@ fill_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_fill, label='Gap-fill
 orig_ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_miss, label='ESA CCI with Gaps')
 ismn.sel(stations=stations[0]).plot(ax=ax1, color=col_ismn, label='ISMN station')
 
-intp_ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_intp)
 fill_ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_fill)
 orig_ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_miss)
 ismn.sel(stations=stations[1]).plot(ax=ax2, color=col_ismn)
 
-intp_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_intp)
 fill_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_fill)
 orig_ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_miss)
 ismn.sel(stations=stations[2]).plot(ax=ax3, color=col_ismn)
