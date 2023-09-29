@@ -246,7 +246,7 @@ ax6.axhline(y=0, c='black')
 legend_elements = [Patch(facecolor=col_intp, edgecolor='black', label='Initial guess'),
                    Patch(facecolor=col_fill, edgecolor='black', label='CLIMFILL')]
 
-ax6.legend(handles=legend_elements, loc='upper right')
+ax6.legend(handles=legend_elements, loc='upper left')
 
 ax1.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
 ax2.set_xticks(x_pos+0.5*wd, varnames_plot, rotation=90)
