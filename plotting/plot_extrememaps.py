@@ -80,10 +80,9 @@ orig = orig.where(orig != 1, 10)
 fill = fill.where(fill != 1, 10)
 
 # plot pre 
-varnames_plot = ['burned area','2m temperature \n(in-situ)','land surface \ntemperature',
-                 'diurnal temperature \nrange','precipitation \n(in-situ)',
-                 'precipitation \n(satellite)','surface layer soil \nmoisture',
-                 'terrestrial water \nstorage'] 
+varnames_plot = ['BA','T2M','LST', 'DTR','P2M',
+                 'PSAT','SM',
+                 'TWS'] 
 levels = np.arange(0,1.1,0.1)
 
 # plot
